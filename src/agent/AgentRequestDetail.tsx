@@ -92,7 +92,7 @@ export function AgentRequestDetail() {
     if (success) {
       emitToast('Request accepted', {
         tone: 'success',
-        description: `${formatMoney(request.amount)} reserved. Complete the handover, then confirm.`,
+        description: `${formatMoney(request.amount, request.currency)} reserved. Complete the handover, then confirm.`,
       })
     }
   }
@@ -105,7 +105,7 @@ export function AgentRequestDetail() {
     if (nextStatus === 'completed') {
       emitToast('Rebalance complete', {
         tone: 'success',
-        description: `${formatMoney(request.amount)} settled and reconciled.`,
+        description: `${formatMoney(request.amount, request.currency)} settled and reconciled.`,
       })
     } else if (nextStatus === 'accepted') {
       emitToast('Handover confirmed', {
@@ -226,9 +226,9 @@ export function AgentRequestDetail() {
         </div>
 
         <div className="relative mt-4 flex items-baseline gap-1.5">
-          <span className="text-[11px] font-medium text-white/40">GHS</span>
+          <span className="text-[11px] font-medium text-white/40">{request.currency}</span>
           <span className="balance-display text-[43px] leading-none text-[#F7F5EF]">
-            {formatMoney(request.amount).replace('GHS ', '')}
+            {formatMoney(request.amount, request.currency).replace(`${request.currency} `, '')}
           </span>
         </div>
 
@@ -258,7 +258,7 @@ export function AgentRequestDetail() {
 
         <div className="relative mt-3.5 flex items-center justify-between text-[9px] text-white/30">
           <span>{relativeTime(request.createdAt, now)}</span>
-          <span>{other?.area ?? 'Accra'} · {other?.distanceKm.toFixed(1)} km</span>
+          <span>{other?.area ?? agent.area} · {other?.distanceKm.toFixed(1)} km</span>
         </div>
       </section>
 
@@ -276,7 +276,7 @@ export function AgentRequestDetail() {
             <div>
               <div className="text-[11px] font-medium text-forest-900">Review before accepting</div>
               <p className="mt-0.5 text-[9.5px] leading-relaxed text-muted">
-                Accepting reserves {formatMoney(request.amount)} from your float. Nothing moves until both sides
+                Accepting reserves {formatMoney(request.amount, request.currency)} from your float. Nothing moves until both sides
                 confirm the handover.
               </p>
             </div>
@@ -285,12 +285,12 @@ export function AgentRequestDetail() {
           <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-cream/80 p-2.5">
             <div>
               <div className="text-[8px] font-medium uppercase tracking-[0.1em] text-muted/60">Your float</div>
-              <div className="tnum mt-0.5 text-[12px] font-medium text-forest-900">{formatMoney(agent.floatBalance)}</div>
+              <div className="tnum mt-0.5 text-[12px] font-medium text-forest-900">{formatMoney(agent.floatBalance, agent.currency)}</div>
             </div>
             <div className="text-right">
               <div className="text-[8px] font-medium uppercase tracking-[0.1em] text-muted/60">After handover</div>
               <div className="tnum mt-0.5 text-[12px] font-medium text-forest-900">
-                {formatMoney(Math.max(0, agent.floatBalance - request.amount))}
+                {formatMoney(Math.max(0, agent.floatBalance - request.amount), agent.currency)}
               </div>
             </div>
           </div>
