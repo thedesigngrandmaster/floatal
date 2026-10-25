@@ -22,7 +22,7 @@ import {
 } from '../lib/format'
 import { store } from '../lib/store'
 import { emitHaptic } from '../lib/toast'
-import type { FloatStatus } from '../lib/types'
+import type { Currency, FloatStatus } from '../lib/types'
 
 const statusMeta: Record<
   FloatStatus,
