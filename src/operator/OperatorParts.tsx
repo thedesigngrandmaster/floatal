@@ -479,6 +479,8 @@ export function AgentDrawer({
     )
   }
 
+  const market = marketByCode[agent.country]
+
   const reports = snapshot.data.reports
     .filter((report) => report.agentId === agent.id)
     .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
@@ -511,15 +513,17 @@ export function AgentDrawer({
         name: agent.name,
         business: agent.businessName,
         phone: agent.phone,
+        market: market.name,
+        currency: agent.currency,
         area: agent.area,
         status: statusLabel(agent.status),
-        float_ghs: agent.floatBalance,
-        target_ghs: agent.targetFloat,
-        low_threshold_ghs: agent.lowThreshold,
-        critical_threshold_ghs: agent.criticalThreshold,
-        reserved_ghs: reserved,
+        float: agent.floatBalance,
+        target: agent.targetFloat,
+        low_threshold: agent.lowThreshold,
+        critical_threshold: agent.criticalThreshold,
+        reserved,
         reliability_pct: agent.reliability,
-        volume_today_ghs: agent.todayVolume,
+        volume_today: agent.todayVolume,
         last_report: agent.lastReportAt,
         last_sync: agent.lastSyncAt,
       },
@@ -553,7 +557,7 @@ export function AgentDrawer({
             <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-muted">
               <span>{agent.area}</span>
               <span className="h-1 w-1 rounded-full bg-sand-300" />
-              <span>Accra Metro</span>
+              <span>{market.name}</span>
               <span className="h-1 w-1 rounded-full bg-sand-300" />
               <span>Agent since {new Date(agent.joinedAt).getFullYear()}</span>
             </p>
@@ -571,7 +575,7 @@ export function AgentDrawer({
                 Reported float
               </div>
               <div className="font-display tnum mt-1 text-[29px] font-medium leading-none tracking-[-0.045em]">
-                {formatMoney(agent.floatBalance)}
+                {formatMoney(agent.floatBalance, agent.currency)}
               </div>
             </div>
             <StatusPill status={agent.status} onDark size="sm" />
@@ -592,16 +596,16 @@ export function AgentDrawer({
               />
             </div>
             <div className="mt-1.5 flex justify-between text-[9px] text-white/40">
-              <span>{progress}% of {formatMoney(agent.targetFloat)} target</span>
-              <span>{reserved > 0 ? `${formatMoney(reserved)} reserved` : 'No held float'}</span>
+              <span>{progress}% of {formatMoney(agent.targetFloat, agent.currency)} target</span>
+              <span>{reserved > 0 ? `${formatMoney(reserved, agent.currency)} reserved` : 'No held float'}</span>
             </div>
           </div>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2">
           {[
-            { label: 'Low floor', value: formatMoney(agent.lowThreshold) },
-            { label: 'Critical', value: formatMoney(agent.criticalThreshold) },
+            { label: 'Low floor', value: formatMoney(agent.lowThreshold, agent.currency) },
+            { label: 'Critical', value: formatMoney(agent.criticalThreshold, agent.currency) },
             { label: 'Reliability', value: `${agent.reliability}%` },
           ].map((item) => (
             <div key={item.label} className="rounded-xl border border-forest-900/[0.06] bg-white px-2.5 py-2">
@@ -627,7 +631,7 @@ export function AgentDrawer({
           />
         </div>
         <div className="mt-2 flex items-center justify-between text-[9px] text-muted/60">
-          <span>Today's volume {formatMoney(agent.todayVolume)}</span>
+          <span>Today's volume {formatMoney(agent.todayVolume, agent.currency)}</span>
           <span>{agent.distanceKm.toFixed(1)} km from centre</span>
         </div>
       </div>
@@ -659,7 +663,7 @@ export function AgentDrawer({
                       {outgoing ? 'To' : 'From'} {other?.name ?? 'Agent'}
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5 text-[9px] text-muted">
-                      <span className="tnum">{formatMoney(request.amount)}</span>
+                      <span className="tnum">{formatMoney(request.amount, request.currency)}</span>
                       <span className="h-1 w-1 rounded-full bg-sand-300" />
                       <span>{relativeTime(request.updatedAt, now)}</span>
                     </div>
@@ -681,7 +685,7 @@ export function AgentDrawer({
                 Open request · {openRequest.reference}
               </div>
               <p className="mt-0.5 text-[9.5px] leading-relaxed text-warn-700/70">
-                {formatMoney(openRequest.amount)} · {openRequest.status === 'pending' ? 'Awaiting provider' : 'Awaiting reconciliation'}
+                {formatMoney(openRequest.amount, openRequest.currency)} · {openRequest.status === 'pending' ? 'Awaiting provider' : 'Awaiting reconciliation'}
               </p>
               <button
                 type="button"
@@ -838,9 +842,9 @@ export function RequestDrawer({
           <span className="text-[9.5px] text-muted/60">Updated {relativeTime(request.updatedAt, now).toLowerCase()}</span>
         </div>
         <div className="mt-4 flex items-baseline gap-1.5">
-          <span className="text-[11px] font-medium text-muted">GHS</span>
+          <span className="text-[11px] font-medium text-muted">{request.currency}</span>
           <span className="font-display tnum text-[34px] font-medium leading-none tracking-[-0.045em] text-forest-900">
-            {formatMoney(request.amount).replace('GHS ', '')}
+            {formatMoney(request.amount, request.currency).replace(`${request.currency} `, '')}
           </span>
         </div>
 

@@ -9,6 +9,7 @@ import {
   WifiOff,
 } from 'lucide-react'
 import { cx, formatAmount, formatCompactMoney, statusLabel } from '../lib/format'
+import { marketByCode } from '../lib/markets'
 import type { Agent, FloatStatus, RequestStatus } from '../lib/types'
 
 export function StatusPill({
@@ -136,7 +137,7 @@ export function SyncChip({
   className?: string
 }) {
   const state = syncing ? 'syncing' : online ? 'online' : 'offline'
-  const label = syncing ? 'Syncing' : online ? 'Online' : queued > 0 ? `Offline Â· ${queued}` : 'Offline'
+  const label = syncing ? 'Syncing' : online ? 'Online' : queued > 0 ? `Offline · ${queued}` : 'Offline'
   const icon =
     state === 'syncing' ? (
       <RefreshCw size={11} className="animate-spin" />
@@ -473,7 +474,7 @@ export function NetworkMap({
         preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 h-full w-full"
         role="img"
-        aria-label="Abstract map of agent float positions across Accra"
+        aria-label={`Abstract map of agent float positions across ${market?.name ?? 'the network'}`}
       >
         <defs>
           <radialGradient id={`mapglow-${id}`} cx="55%" cy="45%" r="60%">
@@ -511,17 +512,17 @@ export function NetworkMap({
         </g>
 
         <g opacity="0.4">
-          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Manrope, sans-serif">
-            ACCRA METRO
+          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Bricolage Grotesque, sans-serif">
+            {market ? market.capital.toUpperCase() : 'NETWORK'}
           </text>
-          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Manrope, sans-serif">
-            5.560Â° N Â· 0.196Â° W
+          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Bricolage Grotesque, sans-serif">
+            {coordinates}
           </text>
         </g>
         <g transform="translate(604 40)" opacity="0.5">
           <circle r="12" fill="none" stroke="#A8DEC2" strokeOpacity="0.25" />
           <path d="M0 -8 L3 3 L0 1 L-3 3 Z" fill="#A8DEC2" fillOpacity="0.6" />
-          <text x="0" y="-16" textAnchor="middle" fill="#A8DEC2" fontSize="6.5" letterSpacing="1" fontFamily="Manrope, sans-serif">
+          <text x="0" y="-16" textAnchor="middle" fill="#A8DEC2" fontSize="6.5" letterSpacing="1" fontFamily="Bricolage Grotesque, sans-serif">
             N
           </text>
         </g>
@@ -544,7 +545,7 @@ export function NetworkMap({
               tabIndex={onSelect ? 0 : undefined}
               aria-label={`${agent.name}, ${statusLabel(agent.status)} float`}
             >
-              <title>{`${agent.name} â€” ${statusLabel(agent.status)}`}</title>
+              <title>{`${agent.name} — ${statusLabel(agent.status)}`}</title>
               <circle cx={point.x} cy={point.y} r={isCurrent ? 19 : 14} fill={color} opacity="0.1" />
               <circle
                 cx={point.x}
@@ -590,7 +591,7 @@ export function NetworkMap({
                     fill={isCurrent ? '#FFE291' : '#D7EFE3'}
                     fontSize={isCurrent ? 6.5 : 6}
                     letterSpacing="0.7"
-                    fontFamily="Manrope, sans-serif"
+                    fontFamily="Bricolage Grotesque, sans-serif"
                   >
                     {isCurrent ? 'YOU' : agent.name.split(' ')[0].toUpperCase()}
                   </text>

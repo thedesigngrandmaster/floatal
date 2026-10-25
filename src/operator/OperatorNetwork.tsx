@@ -31,6 +31,7 @@ import {
   SectionCard,
   exportAgents,
 } from './OperatorParts'
+import { useOperatorMarket } from './MarketContext'
 
 type StatusFilter = 'all' | FloatStatus
 type SortMode = 'float' | 'attention' | 'name'
@@ -45,13 +46,14 @@ const statusFilters: Array<{ key: StatusFilter; label: string }> = [
 export function OperatorNetwork() {
   const snapshot = useFloatal()
   const now = useNow(20_000)
+  const { meta, agents, events } = useOperatorMarket()
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [sort, setSort] = useState<SortMode>('float')
   const [query, setQuery] = useState('')
-  const [selectedId, setSelectedId] = useState<string>('agt_ama')
+  const [selectedId, setSelectedId] = useState<string>('')
   const [drawerAgentId, setDrawerAgentId] = useState<string | null>(null)
 
-  const { agents, operator, events } = snapshot.data
+  const operator = snapshot.data.operator
   const online = agents.filter((agent) => now - new Date(agent.lastSyncAt).getTime() < 45 * 60_000)
   const attention = agents.filter((agent) => agent.status !== 'healthy')
   const totalFloat = agents.reduce((sum, agent) => sum + agent.floatBalance, 0)
@@ -99,12 +101,12 @@ export function OperatorNetwork() {
       <PageHeader
         eyebrow="Real-time topology"
         title="Live network"
-        description={`Every float position in ${operator.networkName}, mapped by health and synced in real time. Tap any agent to inspect their position.`}
+        description={`Every float position in ${meta.name}, mapped by health and synced in real time. Tap any agent to inspect their position.`}
         actions={
           <>
             <button
               type="button"
-              onClick={() => exportAgents(agents, 'floatal-live-network.csv')}
+              onClick={() => exportAgents(agents, `floatal-${meta.code.toLowerCase()}-live-network.csv`)}
               className="btn btn-ghost btn-sm h-9 rounded-full bg-white text-[10.5px]"
             >
               <Download size={12} /> Export
@@ -120,7 +122,7 @@ export function OperatorNetwork() {
         {[
           {
             label: 'Float under management',
-            value: formatCompactMoney(totalFloat),
+            value: formatCompactMoney(totalFloat, meta.currency),
             detail: `${agents.length} agents reporting`,
             icon: <ArrowUpRight size={13} />,
             cls: 'bg-mint-50 text-forest-700',
@@ -167,7 +169,7 @@ export function OperatorNetwork() {
               <div className="flex items-center gap-2">
                 <LiveBadge label="Live" className="border-white/10 bg-white/[0.06] text-[#B7EBD3]" />
                 <span className="text-[8.5px] font-medium uppercase tracking-[0.13em] text-white/30">
-                  {operator.networkName} · Accra
+                  {operator.networkName} · {meta.capital}
                 </span>
               </div>
               <h2 className="font-display mt-1.5 text-[17px] font-medium tracking-[-0.03em] text-white/90">
@@ -232,7 +234,7 @@ export function OperatorNetwork() {
                   <StatusPill status={selected.status} onDark size="sm" />
                 </div>
                 <div className="mt-0.5 text-[9px] text-white/40">
-                  {formatMoney(selected.floatBalance)} float · {selected.area} · {selected.distanceKm.toFixed(1)} km
+                  {formatMoney(selected.floatBalance, selected.currency)} float · {selected.area} · {selected.distanceKm.toFixed(1)} km
                 </div>
               </div>
               <button
@@ -341,7 +343,7 @@ export function OperatorNetwork() {
                         <div className="mt-0.5 flex items-center gap-1.5 text-[8.5px] text-muted">
                           <span>{agent.area}</span>
                           <span className="h-1 w-1 rounded-full bg-sand-300" />
-                          <span className="tnum">{formatCompactMoney(agent.floatBalance)}</span>
+                          <span className="tnum">{formatCompactMoney(agent.floatBalance, agent.currency)}</span>
                         </div>
                       </div>
                       <StatusPill status={agent.status} size="sm" />
@@ -357,7 +359,7 @@ export function OperatorNetwork() {
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <SectionCard
           title="Coverage by zone"
-          subtitle="Float and attention by Accra neighbourhood"
+          subtitle={`Float and attention by ${meta.capital} neighbourhood`}
           bodyClassName="overflow-x-auto"
         >
           <table className="ops-table min-w-[540px]">
@@ -386,7 +388,7 @@ export function OperatorNetwork() {
                       {zone.online}
                     </span>
                   </td>
-                  <td className="tnum font-medium text-forest-900">{formatMoney(zone.float)}</td>
+                  <td className="tnum font-medium text-forest-900">{formatMoney(zone.float, meta.currency)}</td>
                   <td>
                     {zone.attention > 0 ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-warn-50 px-2 py-0.5 text-[9px] font-medium text-warn-700">
@@ -453,7 +455,7 @@ export function OperatorNetwork() {
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-forest-900/[0.06] bg-white/55 px-4 py-3 text-[9px] text-muted/60">
         <span className="inline-flex items-center gap-1.5">
-          <UsersRound size={10} /> {agents.length} agents in {operator.networkName} · {operator.currency}
+          <UsersRound size={10} /> {agents.length} agents in {meta.name} · {meta.currency}
         </span>
         <span className="inline-flex items-center gap-1.5">
           {online.length === agents.length ? <Wifi size={9} /> : <WifiOff size={9} />}

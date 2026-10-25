@@ -43,16 +43,19 @@ import {
   SectionCard,
   downloadCsv,
 } from './OperatorParts'
+import { useOperatorMarket } from './MarketContext'
 
 export function Overview() {
   const snapshot = useFloatal()
   const now = useNow(25_000)
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('agt_ama')
+  const { meta, agents, requests, events } = useOperatorMarket()
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('')
   const [drawerAgentId, setDrawerAgentId] = useState<string | null>(null)
   const [drawerRequestId, setDrawerRequestId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
 
-  const { agents, requests, events, operator, reports } = snapshot.data
+  const { operator, reports } = snapshot.data
+  const marketReports = reports.filter((report) => agents.some((agent) => agent.id === report.agentId))
   const totalFloat = agents.reduce((sum, agent) => sum + agent.floatBalance, 0)
   const animatedFloat = useAnimatedNumber(totalFloat)
   const onlineAgents = agents.filter((agent) => now - new Date(agent.lastSyncAt).getTime() < 45 * 60_000)
@@ -69,7 +72,7 @@ export function Overview() {
   const healthyFloat = healthy.reduce((sum, agent) => sum + agent.floatBalance, 0)
   const lowFloat = low.reduce((sum, agent) => sum + agent.floatBalance, 0)
   const criticalFloat = critical.reduce((sum, agent) => sum + agent.floatBalance, 0)
-  const recentReports = [...reports]
+  const recentReports = [...marketReports]
     .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
     .slice(-14)
     .map((report) => report.balance)
@@ -79,19 +82,21 @@ export function Overview() {
     .map((request) => request.amount)
 
   const exportOverview = () => {
-    downloadCsv('floatal-network-overview.csv', [
+    downloadCsv(`floatal-${meta.code.toLowerCase()}-overview.csv`, [
       {
         operator: operator.name,
         network: operator.networkName,
+        market: meta.name,
+        currency: meta.currency,
         exported_at: new Date().toISOString(),
         agents: agents.length,
         online_agents: onlineAgents.length,
-        total_float_ghs: totalFloat,
+        total_float: totalFloat,
         healthy_agents: healthy.length,
         low_agents: low.length,
         critical_agents: critical.length,
         open_requests: openRequests.length,
-        open_request_value_ghs: openValue,
+        open_request_value: openValue,
         reconciled_rate_pct: reconciledRate,
       },
     ])
@@ -102,7 +107,7 @@ export function Overview() {
       <PageHeader
         eyebrow={formatLongDate(new Date(now))}
         title={`${greeting(new Date(now))}, Adjoa.`}
-        description={`${operator.name} is live across ${operator.networkName}. ${
+        description={`${operator.name} is live in ${meta.name}. ${
           attention.length === 0
             ? 'Every agent is reporting a healthy position.'
             : `${attention.length} agent${attention.length === 1 ? '' : 's'} need attention before the afternoon peak.`
@@ -130,8 +135,8 @@ export function Overview() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Float under management"
-          value={formatCompactMoney(animatedFloat)}
-          hint={`${formatCompactMoney(agents.reduce((sum, agent) => sum + agent.todayVolume, 0))} volume today`}
+          value={formatCompactMoney(animatedFloat, meta.currency)}
+          hint={`${formatCompactMoney(agents.reduce((sum, agent) => sum + agent.todayVolume, 0), meta.currency)} volume today`}
           delta={{ label: '+4.2%', direction: 'up' }}
           icon={<Wallet size={14} />}
           spark={recentReports.length > 1 ? recentReports : agents.map((agent) => agent.floatBalance)}
@@ -147,7 +152,7 @@ export function Overview() {
         <MetricCard
           label="Open rebalancing"
           value={String(openRequests.length)}
-          hint={`${formatCompactMoney(openValue)} in motion`}
+          hint={`${formatCompactMoney(openValue, meta.currency)} in motion`}
           delta={{ label: openRequests.filter((request) => request.status === 'pending').length ? 'Action needed' : 'On track', direction: 'flat' }}
           icon={<RefreshCw size={14} />}
           tone={openRequests.length > 0 ? 'gold' : 'default'}
@@ -201,6 +206,8 @@ export function Overview() {
             <NetworkOverviewMap
               agents={agents}
               selectedId={selected?.id}
+              label={`${meta.capital.toUpperCase()} · ${meta.name.toUpperCase()}`}
+              coordinates={`${Math.abs(meta.coordinates.lat).toFixed(3)}° ${meta.coordinates.lat >= 0 ? 'N' : 'S'} · ${Math.abs(meta.coordinates.lng).toFixed(3)}° ${meta.coordinates.lng >= 0 ? 'E' : 'W'}`}
               onSelect={(agentId) => setSelectedAgentId(agentId)}
             />
 
@@ -221,7 +228,7 @@ export function Overview() {
                   <div className="mt-0.5 flex items-center gap-1.5 text-[9.5px] text-white/45">
                     <MapPin size={8} /> {selected.area}
                     <span className="h-1 w-1 rounded-full bg-white/20" />
-                    <span>{formatMoney(selected.floatBalance)} float</span>
+                    <span>{formatMoney(selected.floatBalance, meta.currency)} float</span>
                     <span className="h-1 w-1 rounded-full bg-white/20" />
                     <span>{selected.reliability}% reliability</span>
                   </div>
@@ -244,8 +251,8 @@ export function Overview() {
           <div className="grid grid-cols-3 divide-x divide-white/[0.06] border-t border-white/[0.06] bg-white/[0.02]">
             {[
               { label: 'Online now', value: `${onlineAgents.length} agents` },
-              { label: 'Open requests', value: `${openRequests.length} Â· ${formatCompactMoney(openValue)}` },
-              { label: 'Healthy float', value: formatCompactMoney(healthyFloat) },
+              { label: 'Open requests', value: `${openRequests.length} · ${formatCompactMoney(openValue, meta.currency)}` },
+              { label: 'Healthy float', value: formatCompactMoney(healthyFloat, meta.currency) },
             ].map((item) => (
               <div key={item.label} className="px-4 py-3">
                 <div className="text-[7.5px] font-medium uppercase tracking-[0.12em] text-white/28">{item.label}</div>
@@ -294,7 +301,7 @@ export function Overview() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="tnum text-[11px] font-medium text-forest-900">{formatCompactMoney(agent.floatBalance)}</div>
+                    <div className="tnum text-[11px] font-medium text-forest-900">{formatCompactMoney(agent.floatBalance, meta.currency)}</div>
                     <div className="mt-0.5"><StatusPill status={agent.status} size="sm" /></div>
                   </div>
                 </button>
@@ -307,7 +314,7 @@ export function Overview() {
                 Liquidity coverage
               </span>
               <span className="text-[9.5px] font-medium text-forest-800">
-                {formatCompactMoney(healthyFloat)} available
+                {formatCompactMoney(healthyFloat, meta.currency)} available
               </span>
             </div>
             <div className="mt-2 flex h-1.5 gap-1 overflow-hidden rounded-full">
@@ -322,7 +329,7 @@ export function Overview() {
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <SectionCard
           title="Open rebalancing"
-          subtitle={`${openRequests.length} requests Â· ${formatCompactMoney(openValue)} in motion`}
+          subtitle={`${openRequests.length} requests · ${formatCompactMoney(openValue, meta.currency)} in motion`}
           action={
             <Link to="/ops/rebalancing" className="inline-flex items-center gap-1 text-[10px] font-medium text-forest-700">
               View all <ArrowRight size={10} />
@@ -372,7 +379,7 @@ export function Overview() {
                           </div>
                         </div>
                       </td>
-                      <td className="tnum font-medium text-forest-900">{formatMoney(request.amount)}</td>
+                      <td className="tnum font-medium text-forest-900">{formatMoney(request.amount, request.currency)}</td>
                       <td><RequestPill status={request.status} size="sm" /></td>
                       <td className="text-right text-[9.5px] text-muted">{relativeTime(request.updatedAt, now)}</td>
                     </tr>
@@ -398,7 +405,7 @@ export function Overview() {
               >
                 <div className="text-center">
                   <div className="font-display tnum text-[20px] font-medium leading-none tracking-[-0.04em] text-forest-900">
-                    {formatCompactMoney(totalFloat)}
+                    {formatCompactMoney(totalFloat, meta.currency)}
                   </div>
                   <div className="mt-1 text-[8px] font-medium uppercase tracking-[0.1em] text-muted/60">Total float</div>
                 </div>
@@ -415,7 +422,7 @@ export function Overview() {
                       {item.label}
                     </span>
                     <span className="text-right">
-                      <span className={cx('block text-[10.5px] font-medium', item.text)}>{formatCompactMoney(item.value)}</span>
+                      <span className={cx('block text-[10.5px] font-medium', item.text)}>{formatCompactMoney(item.value, meta.currency)}</span>
                       <span className="block text-[8.5px] text-muted/55">{item.count} agents</span>
                     </span>
                   </div>
@@ -497,7 +504,7 @@ export function Overview() {
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-[11px] font-medium text-forest-900">{agent.name}</div>
                     <div className="mt-0.5 text-[9px] text-muted">
-                      {formatCompactMoney(agent.todayVolume)} volume Â· {agent.area}
+                      {formatCompactMoney(agent.todayVolume, meta.currency)} volume · {agent.area}
                     </div>
                   </div>
                   <div className="text-right">
@@ -515,7 +522,7 @@ export function Overview() {
           <ShieldCheck size={10} /> Every operator action is captured in the reconciliation audit trail.
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Clock3 size={9} /> Live view refreshes automatically Â· {formatLongDate(new Date(now))}
+          <Clock3 size={9} /> Live view refreshes automatically · {formatLongDate(new Date(now))}
         </span>
       </div>
 
@@ -529,10 +536,14 @@ export function Overview() {
 function NetworkOverviewMap({
   agents,
   selectedId,
+  label,
+  coordinates,
   onSelect,
 }: {
   agents: Agent[]
   selectedId?: string
+  label: string
+  coordinates: string
   onSelect: (agentId: string) => void
 }) {
   const statusColor = { healthy: '#7ED0A9', low: '#F5C518', critical: '#F07A6B' }
@@ -565,8 +576,8 @@ function NetworkOverviewMap({
           <circle cx="286" cy="208" r="78" strokeOpacity="0.08" strokeDasharray="2 7" />
         </g>
         <g opacity="0.4">
-          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Manrope, sans-serif">ACCRA METRO</text>
-          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Manrope, sans-serif">5.560Â° N Â· 0.196Â° W</text>
+          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Manrope, sans-serif">{label}</text>
+          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Manrope, sans-serif">{coordinates}</text>
         </g>
         {agents.map((agent) => {
           const point = toPoint(agent)

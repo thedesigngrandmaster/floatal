@@ -37,18 +37,21 @@ import {
 } from './OperatorParts'
 
 type StatusFilter = 'all' | FloatStatus
+import { useOperatorMarket } from './MarketContext'
+
 type SortKey = 'name' | 'float' | 'attention' | 'reliability' | 'volume'
 
 export function Agents() {
   const snapshot = useFloatal()
   const now = useNow(30_000)
+  const { meta, agents } = useOperatorMarket()
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortKey>('attention')
   const [drawerAgentId, setDrawerAgentId] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
 
-  const { agents, operator } = snapshot.data
+  const operator = snapshot.data.operator
   const online = agents.filter((agent) => now - new Date(agent.lastSyncAt).getTime() < 45 * 60_000)
   const attention = agents.filter((agent) => agent.status !== 'healthy')
   const totalFloat = agents.reduce((sum, agent) => sum + agent.floatBalance, 0)
@@ -88,12 +91,12 @@ export function Agents() {
       <PageHeader
         eyebrow="Agent network"
         title="Agents"
-        description={`${agents.length} agents operating under ${operator.name}. Monitor float health, reliability and network coverage.`}
+        description={`${agents.length} agents operating in ${meta.name} under ${operator.name}. Monitor float health, reliability and network coverage.`}
         actions={
           <>
             <button
               type="button"
-              onClick={() => exportAgents(agents, 'floatal-agents.csv')}
+              onClick={() => exportAgents(agents, `floatal-${meta.code.toLowerCase()}-agents.csv`)}
               className="btn btn-ghost btn-sm h-9 rounded-full bg-white text-[10.5px]"
             >
               <Download size={12} /> Export
@@ -132,8 +135,8 @@ export function Agents() {
         />
         <MetricCard
           label="Network volume today"
-          value={formatCompactMoney(totalVolume)}
-          hint={`${formatCompactMoney(totalFloat)} float · ${avgReliability}% reliability`}
+          value={formatCompactMoney(totalVolume, meta.currency)}
+          hint={`${formatCompactMoney(totalFloat, meta.currency)} float · ${avgReliability}% reliability`}
           icon={<Sparkles size={14} />}
           tone="gold"
         />
@@ -273,7 +276,7 @@ export function Agents() {
                           <div className="mt-0.5 text-[8.5px] text-muted">{formatPhone(agent.phone)}</div>
                         </td>
                         <td>
-                          <div className="tnum font-medium text-forest-900">{formatMoney(agent.floatBalance)}</div>
+                          <div className="tnum font-medium text-forest-900">{formatMoney(agent.floatBalance, agent.currency)}</div>
                           <div className="mt-0.5"><StatusPill status={agent.status} size="sm" /></div>
                         </td>
                         <td>
@@ -293,9 +296,9 @@ export function Agents() {
                             </div>
                             <span className="w-6 text-[8.5px] text-muted">{progress}%</span>
                           </div>
-                          <div className="mt-1 text-[8px] text-muted/55">Target {formatCompactMoney(agent.targetFloat)}</div>
+                          <div className="mt-1 text-[8px] text-muted/55">Target {formatCompactMoney(agent.targetFloat, agent.currency)}</div>
                         </td>
-                        <td className="tnum text-[10px] text-forest-800">{formatCompactMoney(agent.todayVolume)}</td>
+                        <td className="tnum text-[10px] text-forest-800">{formatCompactMoney(agent.todayVolume, agent.currency)}</td>
                         <td>
                           <span className={cx('text-[10px] font-medium', agent.reliability >= 97 ? 'text-healthy-600' : 'text-forest-800')}>
                             {agent.reliability}%
@@ -347,7 +350,7 @@ export function Agents() {
                       <span>{relativeTime(agent.lastSyncAt, now)}</span>
                     </div>
                     <div className="mt-1.5 flex items-center justify-between">
-                      <span className="tnum text-[11px] font-medium text-forest-900">{formatMoney(agent.floatBalance)}</span>
+                      <span className="tnum text-[11px] font-medium text-forest-900">{formatMoney(agent.floatBalance, agent.currency)}</span>
                       <span className="text-[8.5px] text-muted">{agent.reliability}% reliable</span>
                     </div>
                   </div>
@@ -394,11 +397,11 @@ export function Agents() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-[10.5px] font-medium text-forest-900">{agent.name}</div>
                       <div className="mt-0.5 text-[8.5px] text-muted">
-                        {formatMoney(agent.floatBalance)} · {agent.area}
+                        {formatMoney(agent.floatBalance, agent.currency)} · {agent.area}
                       </div>
                     </div>
                     <span className="text-[9px] font-medium text-danger-600">
-                      {formatCompactMoney(Math.max(0, agent.lowThreshold - agent.floatBalance))} short
+                      {formatCompactMoney(Math.max(0, agent.lowThreshold - agent.floatBalance), agent.currency)} short
                     </span>
                     <ChevronRight size={12} className="text-muted/40" />
                   </button>
@@ -413,7 +416,7 @@ export function Agents() {
               { label: 'Healthy positions', value: String(counts.healthy), detail: `${Math.round((counts.healthy / Math.max(1, agents.length)) * 100)}% of network`, cls: 'text-healthy-600' },
               { label: 'Below floor', value: String(counts.low + counts.critical), detail: `${counts.critical} critical`, cls: 'text-danger-600' },
               { label: 'Average reliability', value: `${avgReliability}%`, detail: 'Reporting consistency', cls: 'text-forest-800' },
-              { label: 'Float coverage', value: formatCompactMoney(totalFloat), detail: `${agents.length} agents`, cls: 'text-forest-800' },
+              { label: 'Float coverage', value: formatCompactMoney(totalFloat, meta.currency), detail: `${agents.length} agents`, cls: 'text-forest-800' },
             ].map((item) => (
               <div key={item.label} className="rounded-xl border border-forest-900/[0.06] bg-white px-3 py-2.5">
                 <div className="text-[8px] font-semibold uppercase tracking-[0.1em] text-muted/55">{item.label}</div>
@@ -433,7 +436,7 @@ export function Agents() {
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] border border-forest-900/[0.06] bg-white/55 px-4 py-3 text-[9px] text-muted/60">
         <span className="inline-flex items-center gap-1.5">
-          <UsersRound size={10} /> {operator.name} · {operator.networkName} · {operator.currency}
+          <UsersRound size={10} /> {operator.name} · {meta.name} · {meta.currency}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <Plus size={9} /> New agents start at zero float until their first report.

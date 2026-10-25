@@ -1,8 +1,8 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Manrope Variable', 'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Manrope Variable', 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
 
   --color-forest-950: #041b14;
   --color-forest-900: #0c4232;

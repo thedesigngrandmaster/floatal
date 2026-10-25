@@ -17,7 +17,7 @@ import {
   X,
 } from 'lucide-react'
 import { Avatar, RequestPill } from '../components/ui'
-import { useFloatal, useNow } from '../lib/hooks'
+import { useNow } from '../lib/hooks'
 import {
   cx,
   formatCompactMoney,
@@ -45,15 +45,16 @@ const filters: Array<{ key: FilterKey; label: string }> = [
   { key: 'declined', label: 'Declined' },
 ]
 
+import { useOperatorMarket } from './MarketContext'
+
 export function Rebalancing() {
-  const snapshot = useFloatal()
   const now = useNow(20_000)
+  const { meta, requests, agents } = useOperatorMarket()
   const [filter, setFilter] = useState<FilterKey>('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<'recent' | 'amount'>('recent')
   const [drawerRequestId, setDrawerRequestId] = useState<string | null>(null)
 
-  const { requests, agents } = snapshot.data
   const counts = useMemo(() => {
     const result: Record<FilterKey, number> = {
       all: requests.length,
@@ -102,12 +103,12 @@ export function Rebalancing() {
       <PageHeader
         eyebrow="Reconciliation"
         title="Rebalancing"
-        description="Every float request across the network, with two-sided confirmation status and operator oversight."
+        description={`Every float request in ${meta.name}, with two-sided confirmation status and operator oversight.`}
         actions={
           <>
             <button
               type="button"
-              onClick={() => exportRequests(filtered, agents, `floatal-rebalancing-${filter}.csv`)}
+              onClick={() => exportRequests(filtered, agents, `floatal-${meta.code.toLowerCase()}-rebalancing-${filter}.csv`)}
               className="btn btn-ghost btn-sm h-9 rounded-full bg-white text-[10.5px]"
             >
               <Download size={12} /> Export {filter === 'all' ? 'all' : filter}
@@ -120,7 +121,7 @@ export function Rebalancing() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Open value in motion"
-          value={formatCompactMoney(openValue)}
+          value={formatCompactMoney(openValue, meta.currency)}
           hint={`${open.length} open requests`}
           delta={{ label: 'Live', direction: 'flat' }}
           icon={<ArrowUpDown size={14} />}
@@ -129,7 +130,7 @@ export function Rebalancing() {
         <MetricCard
           label="Awaiting provider"
           value={String(counts.pending)}
-          hint={`${formatCompactMoney(pendingValue)} pending`}
+          hint={`${formatCompactMoney(pendingValue, meta.currency)} pending`}
           icon={<Clock3 size={14} />}
           tone={counts.pending > 0 ? 'gold' : 'default'}
         />
@@ -142,7 +143,7 @@ export function Rebalancing() {
         />
         <MetricCard
           label="Settled value"
-          value={formatCompactMoney(settledValue)}
+          value={formatCompactMoney(settledValue, meta.currency)}
           hint={`${counts.completed} completed requests`}
           delta={{ label: 'Two-sided', direction: 'up' }}
           icon={<CheckCircle2 size={14} />}
@@ -301,7 +302,7 @@ export function Rebalancing() {
                             </div>
                           </div>
                         </td>
-                        <td className="tnum font-medium text-forest-900">{formatMoney(request.amount)}</td>
+                        <td className="tnum font-medium text-forest-900">{formatMoney(request.amount, request.currency)}</td>
                         <td>
                           <ConfirmState request={request} />
                         </td>
@@ -340,7 +341,7 @@ export function Rebalancing() {
                         <ArrowRight size={9} />
                         <span className="truncate">{provider?.name.split(' ')[0]}</span>
                         <span className="h-1 w-1 rounded-full bg-sand-300" />
-                        <span className="tnum font-medium text-forest-800">{formatMoney(request.amount)}</span>
+                        <span className="tnum font-medium text-forest-800">{formatMoney(request.amount, request.currency)}</span>
                       </div>
                       <div className="mt-1 text-[8.5px] text-muted/55">
                         {relativeTime(request.updatedAt, now)} · {request.requesterConfirmed ? 'Requester confirmed' : 'Requester pending'} · {request.providerConfirmed ? 'Provider confirmed' : 'Provider pending'}
@@ -374,7 +375,7 @@ export function Rebalancing() {
                 <div key={status}>
                   <div className="flex items-center justify-between text-[10px]">
                     <span className="font-medium capitalize text-forest-900">{status === 'accepted' ? 'In reconciliation' : status}</span>
-                    <span className="text-muted">{list.length} · {formatCompactMoney(value)}</span>
+                    <span className="text-muted">{list.length} · {formatCompactMoney(value, meta.currency)}</span>
                   </div>
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-sand-100">
                     <div
@@ -401,7 +402,7 @@ export function Rebalancing() {
           action={
             <button
               type="button"
-              onClick={() => exportRequests(requests, agents, 'floatal-full-rebalancing-ledger.csv')}
+              onClick={() => exportRequests(requests, agents, `floatal-${meta.code.toLowerCase()}-rebalancing-ledger.csv`)}
               className="inline-flex items-center gap-1 text-[10px] font-medium text-forest-700"
             >
               Export ledger <Download size={10} />
@@ -441,7 +442,7 @@ export function Rebalancing() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="tnum text-[10px] font-medium text-forest-900">{formatMoney(request.amount)}</div>
+                  <div className="tnum text-[10px] font-medium text-forest-900">{formatMoney(request.amount, request.currency)}</div>
                   <div className="mt-0.5"><RequestPill status={request.status} size="sm" /></div>
                 </div>
               </button>
