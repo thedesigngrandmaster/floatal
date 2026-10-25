@@ -1,31 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Check, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react'
 import { AgentStage } from './AgentStage'
 import { Brand, BrandMark } from '../components/Brand'
 import { Spinner } from '../components/ui'
 import { useFloatal } from '../lib/hooks'
-import { DEMO_OTP, findAgentByPhone, requestAgentOtp, verifyAgentOtp } from '../lib/auth'
+import { DEMO_AGENTS, DEMO_OTP, findAgentByPhone, requestAgentOtp, verifyAgentOtp } from '../lib/auth'
 import { supabaseEnabled } from '../lib/supabase'
 import { emitHaptic, emitToast } from '../lib/toast'
-import { cx } from '../lib/format'
+import { cx, phoneDigits, toE164 } from '../lib/format'
+import { MARKETS, marketByCode } from '../lib/markets'
 import { store } from '../lib/store'
+import type { CountryCode } from '../lib/types'
 
-function phoneDigits(value: string) {
-  return value.replace(/\D/g, '').replace(/^0/, '').replace(/^233/, '').slice(0, 9)
+function formatLocal(value: string, length: number) {
+  const digits = phoneDigits(value).slice(0, length)
+  if (length === 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  if (length === 10) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
 }
 
-function formatLocal(value: string) {
-  const digits = phoneDigits(value)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`
-  return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`
-}
-
-function toE164(value: string) {
-  const digits = phoneDigits(value)
-  return digits.length === 9 ? `+233${digits}` : ''
+function demoLocal(country: CountryCode) {
+  const demo = DEMO_AGENTS[country]
+  if (!demo) return ''
+  return phoneDigits(demo.phone).slice(marketByCode[country].dialCode.length - 1)
 }
 
 export function AgentLogin() {
@@ -34,15 +33,23 @@ export function AgentLogin() {
   const snapshot = useFloatal()
   const from = (location.state as { from?: string } | null)?.from ?? '/app'
   const [step, setStep] = useState<'phone' | 'otp'>('phone')
-  const [phone, setPhone] = useState('24 555 0192')
+  const [country, setCountry] = useState<CountryCode>('GH')
+  const [phone, setPhone] = useState(() => demoLocal('GH'))
   const [code, setCode] = useState<string[]>(Array(6).fill(''))
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [resendIn, setResendIn] = useState(0)
   const inputs = useRef<Array<HTMLInputElement | null>>([])
 
-  const agent = useMemo(() => findAgentByPhone(`+233${phoneDigits(phone)}`), [phone, snapshot.data.agents])
+  const market = marketByCode[country]
+  const localPhone = phoneDigits(phone).slice(0, market.localLength)
+  const e164 = toE164(localPhone, country)
+  const agent = useMemo(
+    () => (e164 ? findAgentByPhone(e164) : null),
+    [e164, snapshot.data.agents],
+  )
   const codeValue = code.join('')
+  const displayPhone = `${market.dialCode} ${formatLocal(localPhone, market.localLength)}`
 
   useEffect(() => {
     if (snapshot.agentSession) navigate(from, { replace: true })
@@ -60,12 +67,12 @@ export function AgentLogin() {
 
   const handleRequest = async () => {
     setError('')
-    if (phoneDigits(phone).length !== 9) {
-      setError('Enter a valid 9-digit mobile number')
+    if (localPhone.length !== market.localLength) {
+      setError(`Enter a valid ${market.localLength}-digit ${market.name} mobile number`)
       return
     }
     setSubmitting(true)
-    const result = await requestAgentOtp(toE164(phone))
+    const result = await requestAgentOtp(e164)
     setSubmitting(false)
     if (!result.ok) {
       setError(result.error ?? 'We could not send a code')
@@ -84,7 +91,7 @@ export function AgentLogin() {
     }
     setError('')
     setSubmitting(true)
-    const result = await verifyAgentOtp(toE164(phone), token)
+    const result = await verifyAgentOtp(e164, token)
     setSubmitting(false)
     if (!result.ok || !result.agentId) {
       setError(result.error ?? 'That code is not correct')
@@ -177,7 +184,7 @@ export function AgentLogin() {
           <p className="mt-3 max-w-[270px] text-[12.5px] leading-relaxed text-white/45">
             {step === 'phone'
               ? 'Sign in with the number registered to your agent account.'
-              : `We sent a 6-digit code to +233 ${formatLocal(phone)}.`}
+              : `We sent a 6-digit code to ${displayPhone}.`}
           </p>
         </div>
 

@@ -383,7 +383,7 @@ export function AgentRequestDetail() {
           <div className="grid grid-cols-2 border-t border-healthy-500/10 divide-x divide-healthy-500/10">
             <div className="p-3">
               <div className="text-[8px] font-medium uppercase tracking-[0.1em] text-healthy-700/50">Your float now</div>
-              <div className="tnum mt-0.5 text-[13px] font-medium text-healthy-700">{formatMoney(agent.floatBalance)}</div>
+              <div className="tnum mt-0.5 text-[13px] font-medium text-healthy-700">{formatMoney(agent.floatBalance, agent.currency)}</div>
             </div>
             <div className="p-3">
               <div className="text-[8px] font-medium uppercase tracking-[0.1em] text-healthy-700/50">Status</div>
@@ -425,7 +425,7 @@ export function AgentRequestDetail() {
       <div className="mt-3 rounded-[20px] border border-forest-900/[0.07] bg-white px-4 py-1">
         <DetailRow label="Reference" value={request.reference} mono />
         <DetailRow label="Requested" value={`${relativeTime(request.createdAt, now)} · ${formatTime(request.createdAt)}`} />
-        <DetailRow label="Network" value={`${other?.area ?? 'Accra'} · ${other?.distanceKm.toFixed(1) ?? '—'} km`} />
+        <DetailRow label="Network" value={`${other?.area ?? agent.area} · ${other?.distanceKm.toFixed(1) ?? '—'} km`} />
         {request.note && <DetailRow label="Note" value={request.note} />}
       </div>
 
@@ -608,7 +608,7 @@ function Timeline({
   const steps = [
     {
       label: 'Request created',
-      detail: `${requester?.name ?? 'Requester'} requested ${formatMoney(request.amount)}`,
+      detail: `${requester?.name ?? 'Requester'} requested ${formatMoney(request.amount, request.currency)}`,
       time: request.createdAt,
       done: true,
       tone: 'forest',

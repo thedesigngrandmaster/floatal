@@ -6,6 +6,7 @@ import { useSheet } from '../components/Sheet'
 import { Avatar, Spinner } from '../components/ui'
 import { useFloatal } from '../lib/hooks'
 import { availableExcess, formatAmount, formatMoney, suggestAmount } from '../lib/format'
+import { marketByCode } from '../lib/markets'
 import { store } from '../lib/store'
 import { emitToast } from '../lib/toast'
 import type { Agent, RebalanceRequest } from '../lib/types'
@@ -26,8 +27,9 @@ function RequestFlow({ providerId }: { providerId: string }) {
       )
     : 0
   const suggested = current && provider
-    ? suggestAmount(current.floatBalance, current.lowThreshold, excess)
+    ? suggestAmount(current.floatBalance, current.lowThreshold, excess, marketByCode[current.country].step)
     : 1000
+  const step = current ? marketByCode[current.country].step : 500
   const [amount, setAmount] = useState(String(suggested))
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -37,9 +39,9 @@ function RequestFlow({ providerId }: { providerId: string }) {
   const numericAmount = Number(amount.replace(/\D/g, ''))
   const quickAmounts = useMemo(() => {
     if (!provider) return []
-    const values = [suggested, 2000, 5000, Math.floor(excess / 500) * 500]
-    return [...new Set(values)].filter((value) => value >= 500 && value <= excess).slice(0, 3)
-  }, [provider, suggested, excess])
+    const values = [suggested, step * 4, step * 10, Math.floor(excess / step) * step]
+    return [...new Set(values)].filter((value) => value >= step && value <= excess).slice(0, 3)
+  }, [provider, suggested, excess, step])
 
   if (!provider || !current) {
     return (
@@ -53,12 +55,12 @@ function RequestFlow({ providerId }: { providerId: string }) {
   }
 
   const offline = !snapshot.online || snapshot.offlineSimulated
-  const invalid = numericAmount < 500 || numericAmount > excess || offline
+  const invalid = numericAmount < step || numericAmount > excess || offline
 
   const send = async () => {
     if (invalid) {
       if (offline) setError('Reconnect to send a request.')
-      else if (numericAmount < 500) setError('Minimum request is GHS 500')
+      else if (numericAmount < step) setError(`Minimum request is ${formatMoney(step, current.currency)}`)
       else if (numericAmount > excess) setError('That is more than this agent has available')
       return
     }
@@ -111,7 +113,7 @@ function RequestFlow({ providerId }: { providerId: string }) {
             <div>
               <div className="text-[9px] font-semibold uppercase tracking-[0.14em] text-muted">Requested</div>
               <div className="tnum font-display mt-1 text-[27px] font-medium leading-none tracking-[-0.045em] text-forest-900">
-                {formatMoney(sent.amount)}
+                {formatMoney(sent.amount, sent.currency)}
               </div>
             </div>
             <Avatar name={provider.name} hue={provider.avatarHue} size="lg" />
@@ -182,7 +184,7 @@ function RequestFlow({ providerId }: { providerId: string }) {
           </div>
         </div>
         <span className="rounded-full border border-forest-900/8 bg-white px-2.5 py-1 text-[9.5px] font-medium text-forest-800">
-          {formatMoney(excess)} available
+          {formatMoney(excess, provider.currency)} available
         </span>
       </div>
 
@@ -191,7 +193,7 @@ function RequestFlow({ providerId }: { providerId: string }) {
           Request amount
         </label>
         <div className="mt-2 flex items-center gap-2">
-          <span className="font-display text-[17px] font-medium text-muted">GHS</span>
+          <span className="font-display text-[17px] font-medium text-muted">{current.currency}</span>
           <input
             value={amount}
             onChange={(event) => {

@@ -306,7 +306,7 @@ export function AgentProfile() {
         <div className="relative mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-3.5">
           <div>
             <div className="text-[8px] font-medium uppercase tracking-[0.11em] text-white/30">Float reported</div>
-            <div className="tnum mt-0.5 text-[13px] font-medium text-white/80">{formatMoney(agent.floatBalance)}</div>
+            <div className="tnum mt-0.5 text-[13px] font-medium text-white/80">{formatMoney(agent.floatBalance, agent.currency)}</div>
           </div>
           <div>
             <div className="text-[8px] font-medium uppercase tracking-[0.11em] text-white/30">Float status</div>
@@ -387,7 +387,7 @@ export function AgentProfile() {
             <div>
               <div className="text-[9px] text-muted">Target float</div>
               <div className="tnum mt-0.5 text-[18px] font-medium tracking-[-0.03em] text-forest-900">
-                {formatMoney(agent.targetFloat)}
+                {formatMoney(agent.targetFloat, agent.currency)}
               </div>
             </div>
             <div className="text-right">
@@ -406,11 +406,11 @@ export function AgentProfile() {
           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-forest-900/[0.06] pt-3">
             <div>
               <div className="text-[8.5px] text-muted/70">Low threshold</div>
-              <div className="tnum mt-0.5 text-[11px] font-medium text-warn-700">{formatMoney(agent.lowThreshold)}</div>
+              <div className="tnum mt-0.5 text-[11px] font-medium text-warn-700">{formatMoney(agent.lowThreshold, agent.currency)}</div>
             </div>
             <div>
               <div className="text-[8.5px] text-muted/70">Critical threshold</div>
-              <div className="tnum mt-0.5 text-[11px] font-medium text-danger-600">{formatMoney(agent.criticalThreshold)}</div>
+              <div className="tnum mt-0.5 text-[11px] font-medium text-danger-600">{formatMoney(agent.criticalThreshold, agent.currency)}</div>
             </div>
           </div>
         </div>
@@ -645,7 +645,7 @@ function AgentSwitcher({
                   {active && <span className="text-[8px] font-medium text-forest-600">Current</span>}
                 </div>
                 <div className="mt-0.5 text-[9px] text-muted">
-                  {agent.area} · {formatMoney(agent.floatBalance)}
+                  {agent.area} · {formatMoney(agent.floatBalance, agent.currency)}
                 </div>
               </div>
               <StatusPill status={agent.status} size="sm" />

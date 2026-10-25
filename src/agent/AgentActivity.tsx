@@ -202,7 +202,7 @@ export function AgentActivity() {
                             )}
                           </div>
                           <div className="mt-0.5 flex items-center gap-1.5 text-[9.5px] text-muted">
-                            <span className="tnum">{formatMoney(request.amount)}</span>
+                            <span className="tnum">{formatMoney(request.amount, request.currency)}</span>
                             <span className="text-sand-300">·</span>
                             <span>{request.reference}</span>
                             <span className="text-sand-300">·</span>
@@ -245,7 +245,7 @@ export function AgentActivity() {
                   {report.status === 'healthy' ? 'Healthy' : report.status === 'low' ? 'Low' : 'Critical'} float
                   reported
                 </span>
-                <span className="tnum text-[10.5px] font-medium text-forest-900">{formatMoney(report.balance)}</span>
+                <span className="tnum text-[10.5px] font-medium text-forest-900">{formatMoney(report.balance, agent.currency)}</span>
                 <span className="w-[50px] text-right text-[9px] text-muted/60">{relativeTime(report.createdAt, now)}</span>
               </div>
             ))}
