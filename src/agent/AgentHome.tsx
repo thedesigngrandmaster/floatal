@@ -24,6 +24,7 @@ import {
   relativeTime,
 } from '../lib/format'
 import { effectiveAgent, store, type StoreSnapshot } from '../lib/store'
+import { marketByCode } from '../lib/markets'
 import { useRequestFlow } from './requestFlow'
 import { emitHaptic } from '../lib/toast'
 import type { Agent, RebalanceRequest } from '../lib/types'
@@ -42,7 +43,7 @@ export function AgentHome() {
   const queued = queue.length
 
   const providers: ProviderEntry[] = snapshot.data.agents
-    .filter((candidate) => candidate.id !== agent.id)
+    .filter((candidate) => candidate.id !== agent.id && candidate.country === agent.country)
     .map((candidate) => {
       const reserved = snapshot.data.requests
         .filter((request) => request.toAgentId === candidate.id && request.status === 'accepted')
@@ -56,7 +57,7 @@ export function AgentHome() {
         online: now - new Date(candidate.lastSyncAt).getTime() < 45 * 60_000,
       }
     })
-    .filter((entry) => entry.excess >= 500)
+    .filter((entry) => entry.excess >= marketByCode[agent.country].step)
     .sort((a, b) => Number(b.online) - Number(a.online) || a.agent.distanceKm - b.agent.distanceKm)
 
   const myRequests = snapshot.data.requests
@@ -79,8 +80,8 @@ export function AgentHome() {
   const online = snapshot.online && !snapshot.offlineSimulated
   const statusLine =
     agent.status === 'healthy'
-      ? `Above your ${formatMoney(agent.lowThreshold)} safety floor`
-      : `${formatMoney(Math.max(0, agent.lowThreshold - agent.floatBalance))} below your ${formatMoney(agent.lowThreshold)} floor`
+      ? `Above your ${formatMoney(agent.lowThreshold, agent.currency)} safety floor`
+      : `${formatMoney(Math.max(0, agent.lowThreshold - agent.floatBalance), agent.currency)} below your ${formatMoney(agent.lowThreshold, agent.currency)} floor`
   const targetProgress = clamp((agent.floatBalance / Math.max(1, agent.targetFloat)) * 100, 0, 100)
   const lowMarker = clamp((agent.lowThreshold / Math.max(1, agent.targetFloat)) * 100, 0, 100)
   const firstName = agent.name.split(' ')[0]
@@ -145,7 +146,7 @@ export function AgentHome() {
         agentId={agent.id}
         counterparty={counterparty}
       />
-      <HomeFooter />
+      <HomeFooter agent={agent} />
     </>
   )
 }
@@ -174,7 +175,7 @@ function ActionBanner({
         </div>
         <div className="mt-0.5 truncate text-[12.5px] font-medium text-forest-900">
           {isIncoming
-            ? `${partner?.name ?? 'An agent'} needs ${formatMoney(request.amount)}`
+            ? `${partner?.name ?? 'An agent'} needs ${formatMoney(request.amount, request.currency)}`
             : `Confirm your handover with ${partner?.name.split(' ')[0] ?? 'your partner'}`}
         </div>
       </div>
@@ -264,7 +265,7 @@ function HeroCard({
           Available float
         </div>
         <div className="mt-1.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-medium tracking-[0.02em] text-white/45">GHS</span>
+          <span className="text-[12px] font-medium tracking-[0.02em] text-white/45">{agent.currency}</span>
           <span className="balance-display text-[47px] leading-none text-[#F7F5EF]">
             {formatAmount(animatedBalance)}
           </span>
@@ -291,7 +292,7 @@ function HeroCard({
         </div>
         <div className="mt-2 flex items-center justify-between text-[9.5px] text-white/35">
           <span>{Math.round(targetProgress)}% of float target</span>
-          <span>{formatMoney(agent.targetFloat)} target</span>
+          <span>{formatMoney(agent.targetFloat, agent.currency)} target</span>
         </div>
       </div>
 
@@ -447,7 +448,7 @@ function NearbySection({
                     Excess
                   </div>
                   <div className="tnum mt-0.5 text-[13px] font-medium tracking-[-0.02em] text-forest-900">
-                    {formatCompactMoney(entry.excess)}
+                    {formatCompactMoney(entry.excess, entry.agent.currency)}
                   </div>
                 </div>
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-forest-900 text-gold-400 transition-transform group-hover:translate-x-0.5">
@@ -510,7 +511,7 @@ function RecentSection({
                     {outgoing ? 'Request to' : 'Request from'} {other?.name.split(' ')[0] ?? 'agent'}
                   </div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[9.5px] text-muted">
-                    <span className="tnum">{formatMoney(request.amount)}</span>
+                    <span className="tnum">{formatMoney(request.amount, request.currency)}</span>
                     <span className="text-sand-300">·</span>
                     <span>{relativeTime(request.updatedAt)}</span>
                   </div>
@@ -525,7 +526,7 @@ function RecentSection({
   )
 }
 
-function HomeFooter() {
+function HomeFooter({ agent }: { agent: Agent }) {
   return (
     <>
       <div className="mt-7 flex items-start gap-3 rounded-[18px] border border-forest-900/[0.06] bg-mint-50/60 px-3.5 py-3.5">
@@ -538,7 +539,7 @@ function HomeFooter() {
         </p>
       </div>
       <div className="mt-5 flex items-center justify-center gap-1.5 pb-2 text-[9px] uppercase tracking-[0.14em] text-muted/40">
-        <MapPin size={9} /> {formatLongDate()} · Osu, Accra
+        <MapPin size={9} /> {formatLongDate()} · {agent.area}, {agent.city}
       </div>
     </>
   )

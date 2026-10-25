@@ -457,6 +457,10 @@ export function NetworkMap({
 }) {
   const rawId = useId()
   const id = rawId.replace(/[^a-zA-Z0-9]/g, '')
+  const market = agents[0] ? marketByCode[agents[0].country] : null
+  const coordinates = market
+    ? `${Math.abs(market.coordinates.lat).toFixed(3)}° ${market.coordinates.lat >= 0 ? 'N' : 'S'} · ${Math.abs(market.coordinates.lng).toFixed(3)}° ${market.coordinates.lng >= 0 ? 'E' : 'W'}`
+    : '5.560° N · 0.196° W'
   const statusColor: Record<FloatStatus, string> = {
     healthy: '#7ED0A9',
     low: '#F5C518',

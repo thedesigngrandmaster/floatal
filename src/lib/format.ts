@@ -208,11 +208,11 @@ export function availableExcess(balance: number, lowThreshold: number, targetFlo
   return Math.max(0, balance - reserve)
 }
 
-export function suggestAmount(balance: number, lowThreshold: number, providerExcess: number) {
+export function suggestAmount(balance: number, lowThreshold: number, providerExcess: number, step = 500) {
   const target = lowThreshold * 2
-  const gap = Math.max(1000, target - balance)
-  const stepped = Math.ceil(gap / 500) * 500
-  return clamp(stepped, 500, Math.max(500, Math.floor(providerExcess / 500) * 500))
+  const gap = Math.max(step, target - balance)
+  const stepped = Math.ceil(gap / step) * step
+  return clamp(stepped, step, Math.max(step, Math.floor(providerExcess / step) * step))
 }
 
 export function reference() {

@@ -79,9 +79,9 @@ export function AgentReport() {
   const invalid = !Number.isFinite(parsed) || parsed < 0
 
   const ranges: Record<FloatStatus, string> = {
-    healthy: `Above ${formatMoney(agent.lowThreshold)}`,
-    low: `${formatMoney(agent.criticalThreshold)} – ${formatMoney(agent.lowThreshold)}`,
-    critical: `Below ${formatMoney(agent.criticalThreshold)}`,
+    healthy: `Above ${formatMoney(agent.lowThreshold, agent.currency)}`,
+    low: `${formatMoney(agent.criticalThreshold, agent.currency)} - ${formatMoney(agent.lowThreshold, agent.currency)}`,
+    critical: `Below ${formatMoney(agent.criticalThreshold, agent.currency)}`,
   }
 
   const handleAmount = (value: string) => {
@@ -121,6 +121,7 @@ export function AgentReport() {
         result={result}
         online={online}
         now={now}
+        currency={agent.currency}
         onDone={() => navigate('/app')}
       />
     )
@@ -218,7 +219,7 @@ export function AgentReport() {
             </span>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-display text-[17px] font-medium text-muted">GHS</span>
+            <span className="font-display text-[17px] font-medium text-muted">{agent.currency}</span>
             <input
               value={amount}
               onChange={(event) => handleAmount(event.target.value)}
@@ -232,7 +233,7 @@ export function AgentReport() {
               onClick={() => handleAmount(String(agent.floatBalance))}
               className="rounded-full border border-forest-900/8 bg-cream px-2 py-1 text-[8.5px] font-medium text-forest-700"
             >
-              Last: {formatMoney(agent.floatBalance)}
+              Last: {formatMoney(agent.floatBalance, agent.currency)}
             </button>
           </div>
           <div className="mt-3 flex items-center gap-1.5 border-t border-forest-900/[0.055] pt-2.5">
@@ -371,7 +372,7 @@ function ReportSuccess({
                 Reported balance
               </div>
               <div className="balance-display mt-1 text-[31px] leading-none text-forest-900">
-                {formatMoney(result.balance)}
+                {formatMoney(result.balance, currency)}
               </div>
             </div>
             <StatusPill status={result.status} />

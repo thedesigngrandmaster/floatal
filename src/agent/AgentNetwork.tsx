@@ -10,7 +10,8 @@ import {
 } from 'lucide-react'
 import { Avatar, NetworkMap, SyncChip } from '../components/ui'
 import { useFloatal, useNow } from '../lib/hooks'
-import { availableExcess, formatCompactMoney, suggestAmount } from '../lib/format'
+import { availableExcess, formatCompactMoney, formatMoney, suggestAmount } from '../lib/format'
+import { marketByCode } from '../lib/markets'
 import { effectiveAgent } from '../lib/store'
 import { useRequestFlow } from './requestFlow'
 
@@ -27,9 +28,11 @@ export function AgentNetwork() {
 
   const agent = raw ? effectiveAgent(raw, snapshot.queues[raw.id] ?? []) : null
   if (!agent) return null
+  const market = marketByCode[agent.country]
+  const peers = snapshot.data.agents.filter((candidate) => candidate.country === agent.country)
 
   const providers = useMemo(() => {
-    return snapshot.data.agents
+    return peers
       .filter((candidate) => candidate.id !== agent.id)
       .map((candidate) => {
         const reserved = snapshot.data.requests
@@ -44,22 +47,22 @@ export function AgentNetwork() {
           online: now - new Date(candidate.lastSyncAt).getTime() < 45 * 60_000,
         }
       })
-      .filter((entry) => entry.excess >= 500)
+      .filter((entry) => entry.excess >= market.step)
       .filter((entry) => !onlineOnly || entry.online)
       .sort((a, b) =>
         sort === 'nearby'
           ? a.agent.distanceKm - b.agent.distanceKm
           : b.excess - a.excess,
       )
-  }, [snapshot.data.agents, snapshot.data.requests, agent.id, sort, onlineOnly, now])
+  }, [peers, snapshot.data.requests, agent.id, sort, onlineOnly, now, market.step])
 
   const selected = providers.find((entry) => entry.agent.id === selectedId) ?? providers[0] ?? null
   const recommended = Math.min(
-    suggestAmount(agent.floatBalance, agent.lowThreshold, 100000),
-    Math.max(1000, providers[0]?.excess ?? 5000),
+    suggestAmount(agent.floatBalance, agent.lowThreshold, 100000, market.step),
+    Math.max(market.step, providers[0]?.excess ?? market.step * 2),
   )
   const online = snapshot.online && !snapshot.offlineSimulated
-  const agentOnlineCount = snapshot.data.agents.filter(
+  const agentOnlineCount = peers.filter(
     (candidate) => now - new Date(candidate.lastSyncAt).getTime() < 45 * 60_000,
   ).length
 
@@ -69,7 +72,7 @@ export function AgentNetwork() {
         <div>
           <div className="flex items-center gap-1.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-forest-700/60">
             <MapPin size={10} />
-            {snapshot.data.operator.networkName} · Accra
+            {snapshot.data.operator.networkName} · {agent.city}
           </div>
           <h1 className="font-display mt-1.5 text-[27px] font-medium leading-none tracking-[-0.045em] text-forest-900">
             Float network
@@ -81,7 +84,7 @@ export function AgentNetwork() {
       <div className="mt-5">
         <div className="relative h-[216px] overflow-hidden rounded-[24px] bg-forest-950 shadow-[0_18px_44px_-26px_rgba(5,31,24,0.6)]">
           <NetworkMap
-            agents={snapshot.data.agents}
+            agents={peers}
             selectedId={selected?.agent.id}
             onSelect={setSelectedId}
             currentAgentId={agent.id}
@@ -112,7 +115,7 @@ export function AgentNetwork() {
                   <div className="mt-0.5 flex items-center gap-1.5 text-[9px] text-white/45">
                     <span>{selected.agent.area}</span>
                     <span>·</span>
-                    <span>{formatCompactMoney(selected.excess)} excess</span>
+                    <span>{formatCompactMoney(selected.excess, selected.agent.currency)} excess</span>
                   </div>
                 </div>
                 <button
@@ -152,7 +155,7 @@ export function AgentNetwork() {
         <div className="flex-1">
           <div className="text-[10.5px] font-medium text-forest-800">
             {providers.length > 0
-              ? `GHS ${recommended.toLocaleString('en-GH')} would restore a healthy buffer`
+              ? `${formatMoney(recommended, agent.currency)} would restore a healthy buffer`
               : 'No excess float in range right now'}
           </div>
           <div className="mt-0.5 text-[9.5px] leading-relaxed text-forest-800/55">
@@ -267,7 +270,7 @@ export function AgentNetwork() {
                 <div className="text-right">
                   <div className="text-[7.5px] font-medium uppercase tracking-[0.1em] text-muted/60">excess</div>
                   <div className="tnum mt-0.5 text-[12px] font-medium tracking-[-0.015em] text-forest-800">
-                    {formatCompactMoney(entry.excess)}
+                    {formatCompactMoney(entry.excess, entry.agent.currency)}
                   </div>
                 </div>
                 <span className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-forest-900/8 bg-white text-forest-700 transition-colors group-hover:bg-forest-900 group-hover:text-gold-400">
@@ -280,7 +283,7 @@ export function AgentNetwork() {
       </div>
 
       <p className="mt-5 flex items-center justify-center gap-1.5 text-[9px] text-muted/50">
-        <CircleDot size={9} /> Network refreshed {snapshot.data.lastSyncAt ? 'automatically' : 'just now'} · Accra Metro
+        <CircleDot size={9} /> Network refreshed {snapshot.data.lastSyncAt ? 'automatically' : 'just now'} · {market.name}
       </p>
     </div>
   )
