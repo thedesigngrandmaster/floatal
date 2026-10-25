@@ -320,11 +320,13 @@ function ReportSuccess({
   result,
   online,
   now,
+  currency,
   onDone,
 }: {
   result: { queued: boolean; balance: number; status: FloatStatus }
   online: boolean
   now: number
+  currency: Currency
   onDone: () => void
 }) {
   const synced = !result.queued && online
