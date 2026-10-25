@@ -1,0 +1,983 @@
+import type {
+  ActivityEvent,
+  Agent,
+  CountryCode,
+  FloatReport,
+  NetworkSettings,
+  Operator,
+  RebalanceRequest,
+  SharedData,
+} from './types'
+import { formatMoney, statusOf } from './format'
+import { DEFAULT_MARKET, MARKETS, marketByCode } from './markets'
+
+const MINUTE = 60_000
+
+const operator: Operator = {
+  id: 'op_aya',
+  name: 'Aya Money',
+  legalName: 'Aya Financial Technologies Ltd',
+  networkName: 'Aya Network',
+  country: 'Ghana',
+  currency: 'GHS',
+  markets: ['GH', 'NG', 'KE', 'RW', 'GM'],
+  supportEmail: 'network@floatal.dev',
+  plan: 'Enterprise',
+  timezone: 'Africa/Accra',
+  joinedAt: '2023-03-14T09:00:00.000Z',
+}
+
+interface SeedAgent {
+  id: string
+  name: string
+  businessName: string
+  phone: string
+  country: CountryCode
+  area: string
+  city: string
+  balance: number
+  target: number
+  low: number
+  critical: number
+  reportMins: number
+  syncMins: number
+  position: [number, number]
+  coords: [number, number]
+  distance: number
+  volume: number
+  reliability: number
+  hue: number
+  joined: string
+}
+
+const seedAgents: SeedAgent[] = [
+  {
+    id: 'agt_ama',
+    name: 'Ama Mensah',
+    businessName: "Ama's Mobile Money",
+    phone: '+233245550192',
+    country: 'GH',
+    area: 'Osu',
+    city: 'Accra',
+    balance: 3240,
+    target: 20000,
+    low: 5000,
+    critical: 2000,
+    reportMins: 134,
+    syncMins: 3,
+    position: [61, 44],
+    coords: [5.556, -0.196],
+    distance: 0,
+    volume: 8420,
+    reliability: 98,
+    hue: 156,
+    joined: '2023-06-18T10:20:00.000Z',
+  },
+  {
+    id: 'agt_kwame',
+    name: 'Kwame Boateng',
+    businessName: 'Kwame Digital Services',
+    phone: '+233204448821',
+    country: 'GH',
+    area: 'East Legon',
+    city: 'Accra',
+    balance: 34500,
+    target: 25000,
+    low: 6000,
+    critical: 3000,
+    reportMins: 8,
+    syncMins: 8,
+    position: [76, 30],
+    coords: [5.635, -0.153],
+    distance: 0.8,
+    volume: 26750,
+    reliability: 99,
+    hue: 164,
+    joined: '2022-11-02T08:40:00.000Z',
+  },
+  {
+    id: 'agt_efua',
+    name: 'Efua Owusu',
+    businessName: 'Efua Cash Point',
+    phone: '+233557712043',
+    country: 'GH',
+    area: 'Labone',
+    city: 'Accra',
+    balance: 21200,
+    target: 18000,
+    low: 5500,
+    critical: 2500,
+    reportMins: 26,
+    syncMins: 26,
+    position: [58, 53],
+    coords: [5.565, -0.185],
+    distance: 1.4,
+    volume: 19400,
+    reliability: 97,
+    hue: 146,
+    joined: '2023-01-27T12:00:00.000Z',
+  },
+  {
+    id: 'agt_kojo',
+    name: 'Kojo Antwi',
+    businessName: 'Kojo Express Cash',
+    phone: '+233241189930',
+    country: 'GH',
+    area: 'Spintex',
+    city: 'Accra',
+    balance: 18400,
+    target: 16000,
+    low: 5000,
+    critical: 2000,
+    reportMins: 41,
+    syncMins: 21,
+    position: [84, 45],
+    coords: [5.621, -0.108],
+    distance: 2.1,
+    volume: 31200,
+    reliability: 96,
+    hue: 170,
+    joined: '2022-08-09T09:15:00.000Z',
+  },
+  {
+    id: 'agt_akosua',
+    name: 'Akosua Asante',
+    businessName: 'Akosua Mobile Hub',
+    phone: '+233559016724',
+    country: 'GH',
+    area: 'Madina',
+    city: 'Accra',
+    balance: 2100,
+    target: 15000,
+    low: 4500,
+    critical: 2500,
+    reportMins: 12,
+    syncMins: 12,
+    position: [71, 64],
+    coords: [5.684, -0.166],
+    distance: 3.8,
+    volume: 12150,
+    reliability: 95,
+    hue: 40,
+    joined: '2023-05-05T11:10:00.000Z',
+  },
+  {
+    id: 'agt_yaw',
+    name: 'Yaw Darko',
+    businessName: 'Yaw Money Mart',
+    phone: '+233276620415',
+    country: 'GH',
+    area: 'Achimota',
+    city: 'Accra',
+    balance: 4650,
+    target: 12000,
+    low: 5000,
+    critical: 2000,
+    reportMins: 86,
+    syncMins: 86,
+    position: [42, 24],
+    coords: [5.619, -0.226],
+    distance: 4.4,
+    volume: 9800,
+    reliability: 92,
+    hue: 34,
+    joined: '2023-02-11T14:30:00.000Z',
+  },
+  {
+    id: 'agt_abena',
+    name: 'Abena Sarpong',
+    businessName: 'Abena Pay Point',
+    phone: '+233244078812',
+    country: 'GH',
+    area: 'Tema Community 1',
+    city: 'Tema',
+    balance: 27900,
+    target: 22000,
+    low: 6000,
+    critical: 3000,
+    reportMins: 128,
+    syncMins: 128,
+    position: [91, 35],
+    coords: [5.669, -0.017],
+    distance: 5.2,
+    volume: 22100,
+    reliability: 98,
+    hue: 152,
+    joined: '2022-12-14T07:45:00.000Z',
+  },
+  {
+    id: 'agt_kofi',
+    name: 'Kofi Adjei',
+    businessName: 'Kofi Financial Services',
+    phone: '+233209923117',
+    country: 'GH',
+    area: 'Adabraka',
+    city: 'Accra',
+    balance: 1250,
+    target: 16000,
+    low: 5000,
+    critical: 2000,
+    reportMins: 6,
+    syncMins: 6,
+    position: [51, 35],
+    coords: [5.56, -0.207],
+    distance: 5.6,
+    volume: 15800,
+    reliability: 94,
+    hue: 12,
+    joined: '2023-07-19T16:20:00.000Z',
+  },
+  {
+    id: 'agt_nanayaa',
+    name: 'Nana Yaa Frimpong',
+    businessName: 'Nana Yaa Cash',
+    phone: '+233551184400',
+    country: 'GH',
+    area: 'Airport Residential',
+    city: 'Accra',
+    balance: 12400,
+    target: 15000,
+    low: 4500,
+    critical: 2000,
+    reportMins: 33,
+    syncMins: 33,
+    position: [62, 32],
+    coords: [5.606, -0.174],
+    distance: 6.1,
+    volume: 11300,
+    reliability: 97,
+    hue: 44,
+    joined: '2023-03-02T09:20:00.000Z',
+  },
+  {
+    id: 'agt_ibrahim',
+    name: 'Ibrahim Mahama',
+    businessName: 'Ibrahim Mobile Money',
+    phone: '+233247741690',
+    country: 'GH',
+    area: 'Kaneshie',
+    city: 'Accra',
+    balance: 6800,
+    target: 12000,
+    low: 5000,
+    critical: 2000,
+    reportMins: 55,
+    syncMins: 55,
+    position: [38, 50],
+    coords: [5.561, -0.236],
+    distance: 6.8,
+    volume: 7450,
+    reliability: 93,
+    hue: 28,
+    joined: '2023-09-08T10:05:00.000Z',
+  },
+  {
+    id: 'agt_chinedu',
+    name: 'Chinedu Okafor',
+    businessName: 'Okafor Digital Exchange',
+    phone: '+2348034127765',
+    country: 'NG',
+    area: 'Lekki Phase 1',
+    city: 'Lagos',
+    balance: 3_180_000,
+    target: 2_400_000,
+    low: 900_000,
+    critical: 350_000,
+    reportMins: 5,
+    syncMins: 5,
+    position: [72, 34],
+    coords: [6.4478, 3.4723],
+    distance: 0,
+    volume: 4_820_000,
+    reliability: 99,
+    hue: 152,
+    joined: '2023-02-04T08:10:00.000Z',
+  },
+  {
+    id: 'agt_ngozi',
+    name: 'Ngozi Adeyemi',
+    businessName: 'Ngozi Cash Corner',
+    phone: '+2347061189042',
+    country: 'NG',
+    area: 'Yaba',
+    city: 'Lagos',
+    balance: 268_000,
+    target: 2_100_000,
+    low: 900_000,
+    critical: 350_000,
+    reportMins: 74,
+    syncMins: 12,
+    position: [41, 58],
+    coords: [6.5095, 3.3711],
+    distance: 7.4,
+    volume: 1_640_000,
+    reliability: 94,
+    hue: 34,
+    joined: '2023-08-21T11:30:00.000Z',
+  },
+  {
+    id: 'agt_tunde',
+    name: 'Tunde Balogun',
+    businessName: 'Balogun Pay Hub',
+    phone: '+2348124450981',
+    country: 'NG',
+    area: 'Ikeja GRA',
+    city: 'Lagos',
+    balance: 742_000,
+    target: 2_000_000,
+    low: 900_000,
+    critical: 350_000,
+    reportMins: 48,
+    syncMins: 48,
+    position: [56, 20],
+    coords: [6.5833, 3.35],
+    distance: 2.9,
+    volume: 2_210_000,
+    reliability: 96,
+    hue: 44,
+    joined: '2022-10-17T09:00:00.000Z',
+  },
+  {
+    id: 'agt_wanjiku',
+    name: 'Wanjiku Kamau',
+    businessName: 'Wanjiku Float Studio',
+    phone: '+254712884501',
+    country: 'KE',
+    area: 'Westlands',
+    city: 'Nairobi',
+    balance: 412_000,
+    target: 260_000,
+    low: 70_000,
+    critical: 25_000,
+    reportMins: 4,
+    syncMins: 4,
+    position: [66, 38],
+    coords: [-1.2676, 36.8065],
+    distance: 0,
+    volume: 518_000,
+    reliability: 99,
+    hue: 160,
+    joined: '2023-01-12T07:20:00.000Z',
+  },
+  {
+    id: 'agt_brian',
+    name: 'Brian Otieno',
+    businessName: 'Otieno M-Pesa Point',
+    phone: '+254733902144',
+    country: 'KE',
+    area: 'Kibera',
+    city: 'Nairobi',
+    balance: 11_500,
+    target: 190_000,
+    low: 70_000,
+    critical: 25_000,
+    reportMins: 18,
+    syncMins: 18,
+    position: [38, 64],
+    coords: [-1.3133, 36.7892],
+    distance: 6.6,
+    volume: 142_000,
+    reliability: 93,
+    hue: 26,
+    joined: '2023-06-09T15:40:00.000Z',
+  },
+  {
+    id: 'agt_faith',
+    name: 'Faith Njeri',
+    businessName: 'Karen Cash Collective',
+    phone: '+254701556230',
+    country: 'KE',
+    area: 'Karen',
+    city: 'Nairobi',
+    balance: 58_000,
+    target: 220_000,
+    low: 70_000,
+    critical: 25_000,
+    reportMins: 95,
+    syncMins: 95,
+    position: [78, 76],
+    coords: [-1.3192, 36.7078],
+    distance: 3.4,
+    volume: 196_000,
+    reliability: 95,
+    hue: 46,
+    joined: '2022-12-01T10:15:00.000Z',
+  },
+  {
+    id: 'agt_aline',
+    name: 'Aline Uwase',
+    businessName: 'Uwase Mobile Finance',
+    phone: '+250788441209',
+    country: 'RW',
+    area: 'Kiyovu',
+    city: 'Kigali',
+    balance: 3_460_000,
+    target: 2_300_000,
+    low: 850_000,
+    critical: 300_000,
+    reportMins: 7,
+    syncMins: 7,
+    position: [58, 30],
+    coords: [-1.9441, 30.0619],
+    distance: 0,
+    volume: 5_420_000,
+    reliability: 99,
+    hue: 168,
+    joined: '2023-03-22T09:10:00.000Z',
+  },
+  {
+    id: 'agt_eric',
+    name: 'Eric Nkurunziza',
+    businessName: 'Nkurunziza Cash Desk',
+    phone: '+250722118674',
+    country: 'RW',
+    area: 'Nyamirambo',
+    city: 'Kigali',
+    balance: 172_000,
+    target: 1_900_000,
+    low: 850_000,
+    critical: 300_000,
+    reportMins: 22,
+    syncMins: 22,
+    position: [36, 62],
+    coords: [-1.9686, 30.0417],
+    distance: 4.2,
+    volume: 1_280_000,
+    reliability: 94,
+    hue: 30,
+    joined: '2023-07-03T13:25:00.000Z',
+  },
+  {
+    id: 'agt_claudine',
+    name: 'Claudine Mukamana',
+    businessName: 'Mukamana Digital',
+    phone: '+250785663401',
+    country: 'RW',
+    area: 'Remera',
+    city: 'Kigali',
+    balance: 702_000,
+    target: 2_000_000,
+    low: 850_000,
+    critical: 300_000,
+    reportMins: 61,
+    syncMins: 61,
+    position: [73, 48],
+    coords: [-1.9563, 30.1042],
+    distance: 2.8,
+    volume: 2_340_000,
+    reliability: 97,
+    hue: 42,
+    joined: '2022-11-19T12:00:00.000Z',
+  },
+  {
+    id: 'agt_fatou',
+    name: 'Fatou Ceesay',
+    businessName: 'Ceesay Money House',
+    phone: '+2207012234',
+    country: 'GM',
+    area: 'Serrekunda',
+    city: 'Serrekunda',
+    balance: 136_000,
+    target: 120_000,
+    low: 30_000,
+    critical: 12_000,
+    reportMins: 6,
+    syncMins: 6,
+    position: [64, 36],
+    coords: [13.4383, -16.6788],
+    distance: 0,
+    volume: 214_000,
+    reliability: 98,
+    hue: 150,
+    joined: '2023-04-11T08:45:00.000Z',
+  },
+  {
+    id: 'agt_lamin',
+    name: 'Lamin Jallow',
+    businessName: 'Jallow Cash & Transfer',
+    phone: '+2207725581',
+    country: 'GM',
+    area: 'Banjul',
+    city: 'Banjul',
+    balance: 8_400,
+    target: 90_000,
+    low: 30_000,
+    critical: 12_000,
+    reportMins: 14,
+    syncMins: 14,
+    position: [34, 56],
+    coords: [13.4549, -16.579],
+    distance: 5.1,
+    volume: 64_000,
+    reliability: 92,
+    hue: 24,
+    joined: '2023-09-26T16:05:00.000Z',
+  },
+  {
+    id: 'agt_isatou',
+    name: 'Isatou Bah',
+    businessName: 'Bah Mobile Point',
+    phone: '+2207306672',
+    country: 'GM',
+    area: 'Bakau',
+    city: 'Bakau',
+    balance: 24_800,
+    target: 85_000,
+    low: 30_000,
+    critical: 12_000,
+    reportMins: 88,
+    syncMins: 88,
+    position: [72, 58],
+    coords: [13.4781, -16.6819],
+    distance: 2.6,
+    volume: 91_000,
+    reliability: 95,
+    hue: 38,
+    joined: '2022-09-14T10:30:00.000Z',
+  },
+]
+
+function buildAgents(now: number): Agent[] {
+  return seedAgents.map((seed) => ({
+    id: seed.id,
+    operatorId: operator.id,
+    name: seed.name,
+    businessName: seed.businessName,
+    phone: seed.phone,
+    country: seed.country,
+    currency: marketByCode[seed.country].currency,
+    area: seed.area,
+    city: seed.city,
+    initials: seed.name
+      .split(' ')
+      .map((part) => part[0])
+      .join(''),
+    floatBalance: seed.balance,
+    status: statusOf(seed.balance, seed.low, seed.critical),
+    targetFloat: seed.target,
+    lowThreshold: seed.low,
+    criticalThreshold: seed.critical,
+    lastReportAt: new Date(now - seed.reportMins * MINUTE).toISOString(),
+    lastSyncAt: new Date(now - seed.syncMins * MINUTE).toISOString(),
+    position: { x: seed.position[0], y: seed.position[1] },
+    coordinates: { lat: seed.coords[0], lng: seed.coords[1] },
+    distanceKm: seed.distance,
+    todayVolume: seed.volume,
+    reliability: seed.reliability,
+    joinedAt: seed.joined,
+    avatarHue: seed.hue,
+  }))
+}
+
+const settings: NetworkSettings = {
+  thresholds: Object.fromEntries(
+    MARKETS.map((market) => [market.code, { ...market.thresholds }]),
+  ) as NetworkSettings['thresholds'],
+  notifyLow: true,
+  notifyCritical: true,
+  dailyDigest: true,
+  ambientActivity: false,
+}
+
+function buildReports(agents: Agent[]): FloatReport[] {
+  return agents.map((agent, index) => ({
+    id: `rep_seed_${index + 1}`,
+    agentId: agent.id,
+    balance: agent.floatBalance,
+    status: agent.status,
+    note: index === 0 ? 'Morning reconciliation complete.' : undefined,
+    createdAt: agent.lastReportAt,
+    syncedAt: agent.lastReportAt,
+    source: 'seed',
+  }))
+}
+
+interface RequestSeed {
+  id: string
+  reference: string
+  from: string
+  to: string
+  amount: number
+  status: RebalanceRequest['status']
+  note?: string
+  createdMins: number
+  acceptedMins?: number
+  completedMins?: number
+  declinedMins?: number
+  flaggedMins?: number
+  flagReason?: string
+  requesterConfirmed: boolean
+  providerConfirmed: boolean
+}
+
+const requestSeeds: RequestSeed[] = [
+  {
+    id: 'req_8847',
+    reference: 'FL-8847',
+    from: 'agt_yaw',
+    to: 'agt_efua',
+    amount: 2500,
+    status: 'pending',
+    note: 'Need to cover a corporate payout at 3pm.',
+    createdMins: 9,
+    requesterConfirmed: false,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_8842',
+    reference: 'FL-8842',
+    from: 'agt_akosua',
+    to: 'agt_abena',
+    amount: 6000,
+    status: 'accepted',
+    note: 'Customer withdrawal surge in Madina market.',
+    createdMins: 32,
+    acceptedMins: 18,
+    requesterConfirmed: true,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_8839',
+    reference: 'FL-8839',
+    from: 'agt_kofi',
+    to: 'agt_nanayaa',
+    amount: 3500,
+    status: 'completed',
+    createdMins: 112,
+    acceptedMins: 90,
+    completedMins: 72,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_8821',
+    reference: 'FL-8821',
+    from: 'agt_ibrahim',
+    to: 'agt_kojo',
+    amount: 3000,
+    status: 'flagged',
+    flagReason: 'Amount mismatch reported at handover',
+    createdMins: 190,
+    acceptedMins: 186,
+    flaggedMins: 178,
+    requesterConfirmed: false,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_8794',
+    reference: 'FL-8794',
+    from: 'agt_ama',
+    to: 'agt_kwame',
+    amount: 2000,
+    status: 'declined',
+    note: 'Provider float already committed.',
+    createdMins: 27 * 60,
+    declinedMins: 26.5 * 60,
+    requesterConfirmed: false,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_8788',
+    reference: 'FL-8788',
+    from: 'agt_akosua',
+    to: 'agt_nanayaa',
+    amount: 4000,
+    status: 'completed',
+    createdMins: 29 * 60,
+    acceptedMins: 28.8 * 60,
+    completedMins: 28.4 * 60,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_ng_4012',
+    reference: 'FL-4012',
+    from: 'agt_ngozi',
+    to: 'agt_chinedu',
+    amount: 1_500_000,
+    status: 'pending',
+    note: 'Month-end salary withdrawals building up.',
+    createdMins: 7,
+    requesterConfirmed: false,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_ng_3998',
+    reference: 'FL-3998',
+    from: 'agt_tunde',
+    to: 'agt_chinedu',
+    amount: 800_000,
+    status: 'completed',
+    createdMins: 88,
+    acceptedMins: 70,
+    completedMins: 54,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_ke_2210',
+    reference: 'FL-2210',
+    from: 'agt_brian',
+    to: 'agt_wanjiku',
+    amount: 180_000,
+    status: 'pending',
+    note: 'M-Pesa cash-out demand is peaking.',
+    createdMins: 11,
+    requesterConfirmed: false,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_ke_2196',
+    reference: 'FL-2196',
+    from: 'agt_faith',
+    to: 'agt_wanjiku',
+    amount: 90_000,
+    status: 'completed',
+    createdMins: 140,
+    acceptedMins: 122,
+    completedMins: 104,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_rw_1180',
+    reference: 'FL-1180',
+    from: 'agt_eric',
+    to: 'agt_aline',
+    amount: 1_800_000,
+    status: 'accepted',
+    note: 'Kigali market float run ahead of a payout.',
+    createdMins: 24,
+    acceptedMins: 15,
+    requesterConfirmed: true,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_rw_1164',
+    reference: 'FL-1164',
+    from: 'agt_claudine',
+    to: 'agt_aline',
+    amount: 900_000,
+    status: 'completed',
+    createdMins: 210,
+    acceptedMins: 198,
+    completedMins: 182,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+  {
+    id: 'req_gm_6401',
+    reference: 'FL-6401',
+    from: 'agt_lamin',
+    to: 'agt_fatou',
+    amount: 55_000,
+    status: 'pending',
+    note: 'Ferry arrivals need cash at the counter.',
+    createdMins: 16,
+    requesterConfirmed: false,
+    providerConfirmed: false,
+  },
+  {
+    id: 'req_gm_6388',
+    reference: 'FL-6388',
+    from: 'agt_isatou',
+    to: 'agt_fatou',
+    amount: 30_000,
+    status: 'completed',
+    createdMins: 160,
+    acceptedMins: 148,
+    completedMins: 132,
+    requesterConfirmed: true,
+    providerConfirmed: true,
+  },
+]
+
+function buildRequests(now: number, agents: Agent[]): RebalanceRequest[] {
+  const byId = new Map(agents.map((agent) => [agent.id, agent]))
+  const iso = (minutesAgo: number) => new Date(now - minutesAgo * MINUTE).toISOString()
+  return requestSeeds.map((seed) => {
+    const from = byId.get(seed.from) ?? byId.get(seed.to)
+    return {
+      id: seed.id,
+      reference: seed.reference,
+      fromAgentId: seed.from,
+      toAgentId: seed.to,
+      country: from?.country ?? DEFAULT_MARKET,
+      currency: from?.currency ?? 'GHS',
+      amount: seed.amount,
+      status: seed.status,
+      note: seed.note,
+      createdAt: iso(seed.createdMins),
+      updatedAt: iso(
+        seed.completedMins ?? seed.flaggedMins ?? seed.declinedMins ?? seed.acceptedMins ?? seed.createdMins,
+      ),
+      acceptedAt: seed.acceptedMins !== undefined ? iso(seed.acceptedMins) : undefined,
+      completedAt: seed.completedMins !== undefined ? iso(seed.completedMins) : undefined,
+      declinedAt: seed.declinedMins !== undefined ? iso(seed.declinedMins) : undefined,
+      flaggedAt: seed.flaggedMins !== undefined ? iso(seed.flaggedMins) : undefined,
+      flagReason: seed.flagReason,
+      requesterConfirmed: seed.requesterConfirmed,
+      providerConfirmed: seed.providerConfirmed,
+    }
+  })
+}
+
+function buildEvents(now: number, requests: RebalanceRequest[], agents: Agent[]): ActivityEvent[] {
+  const iso = (minutesAgo: number) => new Date(now - minutesAgo * MINUTE).toISOString()
+  const byId = new Map(agents.map((agent) => [agent.id, agent]))
+  const events: ActivityEvent[] = []
+
+  for (const request of requests) {
+    const from = byId.get(request.fromAgentId)
+    const to = byId.get(request.toAgentId)
+    if (!from || !to) continue
+    const money = formatMoney(request.amount, request.currency)
+    const base = {
+      requestId: request.id,
+      amount: request.amount,
+      country: request.country,
+      currency: request.currency,
+    }
+    if (request.status === 'pending') {
+      events.push({
+        ...base,
+        id: `evt_${request.id}_request`,
+        type: 'request',
+        agentId: from.id,
+        counterpartyId: to.id,
+        title: `${from.name} requested ${money}`,
+        detail: `${to.name} · ${from.area} to ${to.area}`,
+        createdAt: request.createdAt,
+      })
+    } else if (request.status === 'accepted') {
+      events.push({
+        ...base,
+        id: `evt_${request.id}_accept`,
+        type: 'accept',
+        agentId: to.id,
+        counterpartyId: from.id,
+        title: `${to.name} accepted a request`,
+        detail: `${money} · ${from.name}`,
+        createdAt: request.acceptedAt ?? request.updatedAt,
+      })
+    } else if (request.status === 'completed') {
+      events.push({
+        ...base,
+        id: `evt_${request.id}_complete`,
+        type: 'complete',
+        agentId: from.id,
+        counterpartyId: to.id,
+        title: 'Rebalance completed',
+        detail: `${money} · ${from.name} and ${to.name} confirmed`,
+        createdAt: request.completedAt ?? request.updatedAt,
+      })
+    } else if (request.status === 'declined') {
+      events.push({
+        ...base,
+        id: `evt_${request.id}_decline`,
+        type: 'decline',
+        agentId: from.id,
+        counterpartyId: to.id,
+        title: 'Request declined',
+        detail: `${money} · ${to.name}${request.note ? ` · ${request.note}` : ''}`,
+        createdAt: request.declinedAt ?? request.updatedAt,
+      })
+    } else if (request.status === 'flagged') {
+      events.push({
+        ...base,
+        id: `evt_${request.id}_flag`,
+        type: 'flag',
+        agentId: from.id,
+        counterpartyId: to.id,
+        title: 'Exception flagged for review',
+        detail: `${money} · ${request.flagReason ?? 'Operator review required'}`,
+        createdAt: request.flaggedAt ?? request.updatedAt,
+      })
+    }
+  }
+
+  for (const agent of agents.filter((candidate) => candidate.status !== 'healthy')) {
+    events.push({
+      id: `evt_${agent.id}_report`,
+      type: 'report',
+      agentId: agent.id,
+      country: agent.country,
+      currency: agent.currency,
+      amount: agent.floatBalance,
+      title: `${agent.name} reported ${agent.status === 'critical' ? 'critical' : 'low'} float`,
+      detail: `${formatMoney(agent.floatBalance, agent.currency)} · ${agent.area}`,
+      createdAt: agent.lastReportAt,
+    })
+  }
+
+  for (const market of MARKETS) {
+    const syncAgent = agents.find(
+      (candidate) =>
+        candidate.country === market.code &&
+        now - new Date(candidate.lastSyncAt).getTime() > 60 * MINUTE,
+    )
+    if (syncAgent) {
+      events.push({
+        id: `evt_${syncAgent.id}_sync`,
+        type: 'sync',
+        agentId: syncAgent.id,
+        country: syncAgent.country,
+        currency: syncAgent.currency,
+        title: `${syncAgent.name} synced offline reports`,
+        detail: `Latest float ${formatMoney(syncAgent.floatBalance, syncAgent.currency)} · ${syncAgent.area}`,
+        createdAt: new Date(now - 38 * MINUTE).toISOString(),
+      })
+    }
+  }
+
+  events.push({
+    id: 'evt_market_launch',
+    type: 'join',
+    country: 'GM',
+    currency: 'GMD',
+    title: 'Gambia market is now live',
+    detail: 'Aya Network · Serrekunda and Banjul agents onboarded',
+    createdAt: iso(3 * 60),
+  })
+
+  return events.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+}
+
+export function createSeedData(now = Date.now()): SharedData {
+  const agents = buildAgents(now)
+  const reports = buildReports(agents)
+  const requests = buildRequests(now, agents)
+  const events = buildEvents(now, requests, agents)
+  return {
+    operator,
+    agents,
+    reports,
+    requests,
+    events,
+    settings,
+    lastSyncAt: new Date(now - 3 * MINUTE).toISOString(),
+    seededAt: new Date(now).toISOString(),
+    revision: 1,
+  }
+}
+
+export const seedAgentForLogin = 'agt_ama'
+export const DEMO_OTP = '246810'
+export const DEMO_PHONE = '+233245550192'
+
+export const DEMO_AGENTS = MARKETS.reduce(
+  (result, market) => {
+    const agent = seedAgents.find((candidate) => candidate.country === market.code)
+    if (agent) result[market.code] = { id: agent.id, phone: agent.phone, name: agent.name }
+    return result
+  },
+  {} as Partial<Record<CountryCode, { id: string; phone: string; name: string }>>,
+)
+
+export const DEMO_PROVIDERS = {
+  GH: 'agt_kwame',
+  NG: 'agt_chinedu',
+  KE: 'agt_wanjiku',
+  RW: 'agt_aline',
+  GM: 'agt_fatou',
+} satisfies Record<CountryCode, string>
