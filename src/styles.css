@@ -1039,3 +1039,133 @@ html.dark body {
 .dark [class*="bg-[#F7F5EF]"] .text-forest-800 {
   color: #0c2a1e;
 }
+
+/* Icons that sit on forest-coloured fills keep their light mint tone. */
+.dark .bg-forest-950 .text-mint-100,
+.dark .bg-forest-950 .text-mint-200,
+.dark .bg-forest-950 .text-mint-300,
+.dark .bg-forest-900 .text-mint-100,
+.dark .bg-forest-900 .text-mint-200,
+.dark .bg-forest-900 .text-mint-300,
+.dark .bg-forest-800 .text-mint-100,
+.dark .bg-forest-800 .text-mint-200,
+.dark .bg-forest-800 .text-mint-300,
+.dark .bg-forest-700 .text-mint-200,
+.dark .bg-forest-900.text-mint-200 {
+  color: #9fdcbc;
+}
+
+/* Forest text with an alpha suffix is a separate class token, so the
+   base dark remap above does not catch it. Keep it legible on dark. */
+.dark [class*='text-forest-950/'] {
+  color: rgb(237 246 241 / 0.88);
+}
+
+.dark [class*='text-forest-900/'] {
+  color: rgb(237 246 241 / 0.82);
+}
+
+.dark [class*='text-forest-800/'] {
+  color: rgb(220 236 227 / 0.8);
+}
+
+.dark [class*='text-forest-700/'] {
+  color: rgb(183 212 196 / 0.82);
+}
+
+/* …but labels and icons inside paper buttons must stay dark. */
+.dark [class*="bg-[#F7F5EF]"] [class*='text-forest-950/'],
+.dark [class*="bg-[#F7F5EF]"] [class*='text-forest-900/'],
+.dark [class*="bg-[#F7F5EF]"] [class*='text-forest-800/'],
+.dark [class*="bg-[#F7F5EF]"] [class*='text-forest-700/'] {
+  color: #0c2a1e;
+}
+
+/* ————— Dark surfaces for component classes ————— */
+.dark .bottom-nav-inner {
+  border-color: rgb(255 255 255 / 0.08);
+  background: rgb(8 28 20 / 0.94);
+  box-shadow:
+    0 -1px 0 rgb(255 255 255 / 0.05) inset,
+    0 18px 40px -20px rgb(0 0 0 / 0.6);
+}
+
+.dark .tab-item {
+  color: #93ab9d;
+}
+
+.dark .tab-item[data-active='true'] {
+  color: #eaf4ee;
+}
+
+.dark .card,
+.dark .ops-card {
+  background: #0e2a20;
+  border-color: rgb(255 255 255 / 0.09);
+}
+
+.dark .glass {
+  background: rgb(10 33 24 / 0.85);
+}
+
+.dark .icon-btn {
+  background: #0e2a20;
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.dark .otp-cell {
+  background: #0e2a20;
+  border-color: rgb(255 255 255 / 0.14);
+  color: #eaf4ee;
+}
+
+.dark .otp-cell:focus {
+  border-color: #78c9a4;
+  box-shadow: 0 0 0 4px rgb(120 201 164 / 0.12);
+}
+
+.dark .ops-topbar {
+  background: rgb(6 21 15 / 0.86);
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+/* Status and accent text needs a lighter tone on dark surfaces. */
+.dark .text-forest-600,
+.dark .text-forest-500 {
+  color: #78c9a4;
+}
+
+.dark [class*='text-forest-600/'],
+.dark [class*='text-forest-500/'] {
+  color: rgb(120 201 164 / 0.75);
+}
+
+.dark .text-healthy-700,
+.dark .text-healthy-600 {
+  color: #8fe0bb;
+}
+
+.dark [class*='text-healthy-700/'],
+.dark [class*='text-healthy-600/'] {
+  color: rgb(143 224 187 / 0.82);
+}
+
+.dark .text-warn-700,
+.dark .text-warn-600 {
+  color: #f2c66d;
+}
+
+.dark [class*='text-warn-700/'],
+.dark [class*='text-warn-600/'] {
+  color: rgb(242 198 109 / 0.84);
+}
+
+.dark .text-danger-700,
+.dark .text-danger-600 {
+  color: #f0a49a;
+}
+
+.dark [class*='text-danger-700/'],
+.dark [class*='text-danger-600/'] {
+  color: rgb(240 164 154 / 0.86);
+}
