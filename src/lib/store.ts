@@ -1,4 +1,4 @@
-import { createSeedData } from './seed'
+﻿import { createSeedData } from './seed'
 import type {
   ActivityEvent,
   Agent,
@@ -17,14 +17,8 @@ import { formatMoney, reference, statusLabel, statusOf } from './format'
 import { marketByCode } from './markets'
 import { emitHaptic, emitToast } from './toast'
 import { supabaseEnabled } from './supabase'
-import {
-  remoteAcceptRequest,
-  remoteConfirmHandover,
-  remoteCreateRequest,
-  remoteDeclineRequest,
-  remoteFlagRequest,
-  remoteReportFloat,
-} from './remote'
+
+const remote = () => import('./remote')
 
 const DATA_KEY = 'floatal.data.v2'
 const QUEUES_KEY = 'floatal.queues.v1'
@@ -165,7 +159,7 @@ class FloatalStore {
       this.rebuild()
       const queued = this.queuedCount()
       if (queued > 0 && !this.offlineSimulated) {
-        emitToast('Connection restored — syncing reports', { tone: 'sync' })
+        emitToast('Connection restored â€” syncing reports', { tone: 'sync' })
         void this.syncNow()
       }
     })
@@ -218,7 +212,7 @@ class FloatalStore {
     this.offlineSimulated = value
     window.sessionStorage.setItem(OFFLINE_KEY, value ? '1' : '0')
     this.rebuild()
-    emitToast(value ? 'Offline mode on — reports will queue locally' : 'Back online', {
+    emitToast(value ? 'Offline mode on â€” reports will queue locally' : 'Back online', {
       tone: value ? 'warning' : 'success',
     })
   }
@@ -241,7 +235,7 @@ class FloatalStore {
       role: 'operator',
       operatorId: operator.id,
       name: 'Adjoa Serwaa',
-      email: 'adjoa@ayamoney.com',
+      email: 'adjoa@floatal.app',
       signedInAt: new Date().toISOString(),
       demo,
     }
@@ -334,7 +328,7 @@ class FloatalStore {
           currency: agent.currency,
           amount: input.balance,
           title: `${agent.name} reported ${statusLabel(input.status).toLowerCase()} float`,
-          detail: `${formatMoney(input.balance, agent.currency)} · ${agent.area}`,
+          detail: `${formatMoney(input.balance, agent.currency)} Â· ${agent.area}`,
           createdAt: now,
         },
         ...data.events,
@@ -345,7 +339,7 @@ class FloatalStore {
     emitHaptic(14)
 
     if (supabaseEnabled) {
-      void remoteReportFloat(report, agent.id)
+      void remote().then((m) => m.remoteReportFloat(report, agent.id))
     }
 
     return { ok: true as const, queued: false, report }
@@ -366,7 +360,7 @@ class FloatalStore {
     if (this.isOffline) {
       this.syncing = false
       this.rebuild()
-      emitToast('Connection lost — reports remain queued', { tone: 'warning' })
+      emitToast('Connection lost â€” reports remain queued', { tone: 'warning' })
       return { ok: false as const, synced: 0, reason: 'offline' as const }
     }
 
@@ -415,7 +409,7 @@ class FloatalStore {
           currency: agent.currency,
           amount: latest.balance,
           title: `${agent.name} synced ${items.length > 1 ? `${items.length} offline reports` : 'an offline report'}`,
-          detail: `Latest float ${formatMoney(latest.balance, agent.currency)} · ${agent.area}`,
+          detail: `Latest float ${formatMoney(latest.balance, agent.currency)} Â· ${agent.area}`,
           createdAt: now,
         })
         data.agents = data.agents.map((candidate) =>
@@ -487,14 +481,14 @@ class FloatalStore {
           currency: agent.currency,
           amount: request.amount,
           title: `${agent.name} requested ${formatMoney(request.amount, agent.currency)}`,
-          detail: `${provider.name} · ${agent.area} to ${provider.area}`,
+          detail: `${provider.name} Â· ${agent.area} to ${provider.area}`,
           createdAt: now,
         },
         ...data.events,
       ].slice(0, 200)
     })
     emitHaptic(12)
-    if (supabaseEnabled) void remoteCreateRequest(request)
+    if (supabaseEnabled) void remote().then((m) => m.remoteCreateRequest(request))
     return { ok: true as const, request }
   }
 
@@ -532,14 +526,14 @@ class FloatalStore {
           currency: request.currency,
           amount: request.amount,
           title: `${agent.name} accepted a request`,
-          detail: `${formatMoney(request.amount, request.currency)} · ${requester?.name ?? 'Agent'}`,
+          detail: `${formatMoney(request.amount, request.currency)} Â· ${requester?.name ?? 'Agent'}`,
           createdAt: now,
         },
         ...data.events,
       ].slice(0, 200)
     })
     emitHaptic([10, 30, 10])
-    if (supabaseEnabled) void remoteAcceptRequest(requestId)
+    if (supabaseEnabled) void remote().then((m) => m.remoteAcceptRequest(requestId))
     return true
   }
 
@@ -572,14 +566,14 @@ class FloatalStore {
           currency: request.currency,
           amount: request.amount,
           title: 'Request declined',
-          detail: `${agent.name}${reason?.trim() ? ` · ${reason.trim()}` : ''}`,
+          detail: `${agent.name}${reason?.trim() ? ` Â· ${reason.trim()}` : ''}`,
           createdAt: now,
         },
         ...data.events,
       ].slice(0, 200)
     })
     emitHaptic(10)
-    if (supabaseEnabled) void remoteDeclineRequest(requestId, reason)
+    if (supabaseEnabled) void remote().then((m) => m.remoteDeclineRequest(requestId, reason))
     return true
   }
 
@@ -660,7 +654,7 @@ class FloatalStore {
             currency: request.currency,
             amount: request.amount,
             title: 'Rebalance completed',
-            detail: `${formatMoney(request.amount, request.currency)} · ${requester?.name ?? 'Agent'} and ${provider?.name ?? 'Agent'} confirmed`,
+            detail: `${formatMoney(request.amount, request.currency)} Â· ${requester?.name ?? 'Agent'} and ${provider?.name ?? 'Agent'} confirmed`,
             createdAt: now,
           },
           ...data.events,
@@ -677,7 +671,7 @@ class FloatalStore {
             currency: request.currency,
             amount: request.amount,
             title: `${agent.name} confirmed handover`,
-            detail: `${formatMoney(request.amount, request.currency)} · awaiting ${isRequester ? provider?.name ?? 'provider' : requester?.name ?? 'requester'}`,
+            detail: `${formatMoney(request.amount, request.currency)} Â· awaiting ${isRequester ? provider?.name ?? 'provider' : requester?.name ?? 'requester'}`,
             createdAt: now,
           },
           ...data.events,
@@ -687,7 +681,7 @@ class FloatalStore {
       data.lastSyncAt = now
     })
     emitHaptic([12, 30, 12])
-    if (supabaseEnabled) void remoteConfirmHandover(requestId, isRequester ? 'requester' : 'provider')
+    if (supabaseEnabled) void remote().then((m) => m.remoteConfirmHandover(requestId, isRequester ? 'requester' : 'provider'))
     return nextStatus as RebalanceRequest['status']
   }
 
@@ -719,7 +713,7 @@ class FloatalStore {
           currency: request.currency,
           amount: request.amount,
           title: 'Exception flagged for review',
-          detail: `${formatMoney(request.amount, request.currency)} · ${reason}`,
+          detail: `${formatMoney(request.amount, request.currency)} Â· ${reason}`,
           createdAt: now,
         },
         ...data.events,
@@ -727,7 +721,7 @@ class FloatalStore {
     })
     emitHaptic([16, 40, 16])
     emitToast('Flagged for operator review', { tone: 'warning' })
-    if (supabaseEnabled) void remoteFlagRequest(requestId, reason)
+    if (supabaseEnabled) void remote().then((m) => m.remoteFlagRequest(requestId, reason))
     return true
   }
 
@@ -767,7 +761,7 @@ class FloatalStore {
           country,
           currency: market.currency,
           title: `${market.name} thresholds updated`,
-          detail: `Low ${formatMoney(low, market.currency)} · Critical ${formatMoney(critical, market.currency)}`,
+          detail: `Low ${formatMoney(low, market.currency)} Â· Critical ${formatMoney(critical, market.currency)}`,
           createdAt: now,
         },
         ...data.events,
@@ -839,7 +833,7 @@ class FloatalStore {
           country: agent.country,
           currency: agent.currency,
           title: `${agent.name} joined the network`,
-          detail: `${agent.businessName} · ${agent.area}, ${market.name}`,
+          detail: `${agent.businessName} Â· ${agent.area}, ${market.name}`,
           createdAt: now,
         },
         ...data.events,
@@ -897,7 +891,7 @@ class FloatalStore {
           currency: agent.currency,
           amount: balance,
           title: `${agent.name} reported ${statusLabel(status).toLowerCase()} float`,
-          detail: `${formatMoney(balance, agent.currency)} · ${agent.area}`,
+          detail: `${formatMoney(balance, agent.currency)} Â· ${agent.area}`,
           createdAt: now,
         },
         ...data.events,
@@ -934,3 +928,4 @@ export function useSyncState(snapshot: StoreSnapshot) {
   if (snapshot.syncing) return 'syncing' as const
   return snapshot.online && !snapshot.offlineSimulated ? ('online' as const) : ('offline' as const)
 }
+

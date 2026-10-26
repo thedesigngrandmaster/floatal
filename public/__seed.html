@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Seed</title>
+  </head>
+  <body>
+    <script>
+      var params = new URLSearchParams(location.search)
+      var role = params.get('role') || 'agent'
+      var id = params.get('id') || 'agt_aline'
+      var to = params.get('to') || '/app'
+      if (role === 'agent') {
+        localStorage.setItem(
+          'floatal.session.agent.v1',
+          JSON.stringify({
+            role: 'agent',
+            agentId: id,
+            phone: '+250788555111',
+            signedInAt: new Date().toISOString(),
+            demo: true,
+          }),
+        )
+        localStorage.removeItem('floatal.session.operator.v1')
+      } else {
+        localStorage.setItem(
+          'floatal.session.operator.v1',
+          JSON.stringify({
+            role: 'operator',
+            operatorId: 'op_aya',
+            name: 'Adjoa Mensah',
+            email: 'adjoa@floatal.app',
+            signedInAt: new Date().toISOString(),
+            demo: true,
+          }),
+        )
+        localStorage.removeItem('floatal.session.agent.v1')
+      }
+      location.replace(to)
+    </script>
+  </body>
+</html>

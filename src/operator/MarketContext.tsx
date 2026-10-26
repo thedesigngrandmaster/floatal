@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown } from 'lucide-react'
 import { useFloatal } from '../lib/hooks'
+import { Flag } from '../components/ui'
 import { DEFAULT_MARKET, MARKETS, marketByCode, type Market } from '../lib/markets'
 import type { ActivityEvent, Agent, CountryCode, RebalanceRequest } from '../lib/types'
 import { cx } from '../lib/format'
@@ -89,7 +90,7 @@ export function MarketSwitcher({ className }: { className?: string }) {
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="text-[13px] leading-none">{meta.flag}</span>
+        <Flag code={meta.code} className="h-3.5 w-5" />
         <span className="hidden text-[10.5px] font-medium text-forest-900 sm:inline">{meta.name}</span>
         <span className="text-[9px] font-semibold uppercase tracking-[0.06em] text-muted/65">{meta.currency}</span>
         <ChevronDown size={11} className={cx('text-muted/50 transition-transform', open && 'rotate-180')} />
@@ -126,7 +127,7 @@ export function MarketSwitcher({ className }: { className?: string }) {
                     active ? 'bg-mint-50' : 'hover:bg-cream',
                   )}
                 >
-                  <span className="text-[15px] leading-none">{item.flag}</span>
+                  <Flag code={item.code} className="h-4 w-6" />
                   <span className="min-w-0 flex-1">
                     <span className="block text-[11px] font-medium text-forest-900">{item.name}</span>
                     <span className="mt-0.5 block text-[9px] text-muted/60">

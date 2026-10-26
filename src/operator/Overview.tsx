@@ -576,8 +576,8 @@ function NetworkOverviewMap({
           <circle cx="286" cy="208" r="78" strokeOpacity="0.08" strokeDasharray="2 7" />
         </g>
         <g opacity="0.4">
-          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Manrope, sans-serif">{label}</text>
-          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Manrope, sans-serif">{coordinates}</text>
+          <text x="34" y="334" fill="#A8DEC2" fontSize="8" letterSpacing="2.4" fontFamily="Bricolage Grotesque, sans-serif">{label}</text>
+          <text x="34" y="347" fill="#A8DEC2" fontSize="7" letterSpacing="0.8" opacity="0.6" fontFamily="Bricolage Grotesque, sans-serif">{coordinates}</text>
         </g>
         {agents.map((agent) => {
           const point = toPoint(agent)
@@ -612,7 +612,7 @@ function NetworkOverviewMap({
                 fontSize={selected ? 7.5 : 6}
                 letterSpacing="0.7"
                 opacity={selected ? 1 : 0.7}
-                fontFamily="Manrope, sans-serif"
+                fontFamily="Bricolage Grotesque, sans-serif"
               >
                 {agent.name.split(' ')[0].toUpperCase()}
               </text>

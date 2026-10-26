@@ -23,6 +23,7 @@ import {
   WifiOff,
 } from 'lucide-react'
 import { Avatar, StatusPill, SyncChip, Toggle } from '../components/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useSheet } from '../components/Sheet'
 import { useFloatal, useInstallPrompt, useNow } from '../lib/hooks'
 import {
@@ -371,6 +372,14 @@ export function AgentProfile() {
               onChange={(value) => store.setOfflineSimulated(value)}
               label="Simulate offline mode"
             />
+          </div>
+
+          <div className="mt-3 flex items-center justify-between border-t border-forest-900/[0.06] pt-3">
+            <div>
+              <div className="text-[10.5px] font-medium text-forest-900">Appearance</div>
+              <div className="mt-0.5 text-[9px] text-muted">Switch between light and dark.</div>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       </div>

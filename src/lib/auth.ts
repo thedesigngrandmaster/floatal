@@ -1,5 +1,5 @@
-import { store } from './store'
-import { supabase, supabaseEnabled } from './supabase'
+﻿import { store } from './store'
+import { getSupabase, supabaseEnabled } from './supabase'
 import { phoneDigits, phoneMatches } from './format'
 import { DEMO_OTP } from './seed'
 import { remoteOperatorSignIn, remoteRequestOtp, remoteVerifyOtp } from './remote'
@@ -58,7 +58,8 @@ export async function signInOperator(email: string, password: string) {
 }
 
 export async function signOutRemote() {
-  if (supabaseEnabled && supabase) {
-    await supabase.auth.signOut()
-  }
+  if (!supabaseEnabled) return
+  const supabase = await getSupabase()
+  await supabase?.auth.signOut()
 }
+

@@ -1,33 +1,27 @@
 import { cx } from '../lib/format'
+import { BRAND_MARK_PATH } from './brandMarkPath'
 
-export function BrandMark({ size = 34, className }: { size?: number; className?: string }) {
+export function BrandMark({
+  size = 34,
+  className,
+  framed = true,
+}: {
+  size?: number
+  className?: string
+  framed?: boolean
+}) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 512 512"
       fill="none"
       className={className}
       aria-hidden="true"
+      focusable="false"
     >
-      <rect width="64" height="64" rx="15" fill="#0C4232" />
-      <rect
-        x="0.6"
-        y="0.6"
-        width="62.8"
-        height="62.8"
-        rx="14.4"
-        stroke="rgba(255,255,255,0.13)"
-        strokeWidth="1.2"
-      />
-      <path
-        d="M21.5 47V27.5C21.5 21.1 25.6 17 32 17h12.5"
-        stroke="#F7F5EF"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      <path d="M21.5 34.5h18" stroke="#F5C518" strokeWidth="5" strokeLinecap="round" />
-      <circle cx="45.5" cy="46" r="4.5" fill="#F5C518" />
+      {framed ? <rect width="512" height="512" rx="112" fill="#0C4232" /> : null}
+      <path d={BRAND_MARK_PATH} fill="#F5C518" />
     </svg>
   )
 }

@@ -12,8 +12,9 @@ import {
 } from 'lucide-react'
 import { Brand, BrandLockup, BrandMark } from '../components/Brand'
 import { Avatar, NetworkMap, Spinner } from '../components/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useFloatal, useNow } from '../lib/hooks'
-import { formatCompactMoney } from '../lib/format'
+import { DEFAULT_MARKET, MARKETS, marketByCode } from '../lib/markets'
 import { store } from '../lib/store'
 import { signInOperator } from '../lib/auth'
 import { emitToast } from '../lib/toast'
@@ -23,7 +24,7 @@ export function OperatorLogin() {
   const snapshot = useFloatal()
   const navigate = useNavigate()
   const now = useNow(30_000)
-  const [email, setEmail] = useState('adjoa@ayamoney.com')
+  const [email, setEmail] = useState('adjoa@floatal.app')
   const [password, setPassword] = useState('floatal-demo')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -32,8 +33,9 @@ export function OperatorLogin() {
     if (snapshot.operatorSession) navigate('/ops', { replace: true })
   }, [snapshot.operatorSession, navigate])
 
-  const totalFloat = snapshot.data.agents.reduce((sum, agent) => sum + agent.floatBalance, 0)
-  const online = snapshot.data.agents.filter(
+  const homeMarket = marketByCode[DEFAULT_MARKET]
+  const homeAgents = snapshot.data.agents.filter((agent) => agent.country === DEFAULT_MARKET)
+  const online = homeAgents.filter(
     (agent) => now - new Date(agent.lastSyncAt).getTime() < 45 * 60_000,
   ).length
 
@@ -68,12 +70,15 @@ export function OperatorLogin() {
 
         <div className="relative z-10 flex items-center justify-between">
           <BrandLockup tone="light" subtitle="Operator console" />
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-medium text-white/50 transition-colors hover:text-white"
-          >
-            <ArrowLeft size={11} /> floatal.com
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle onDark className="h-8 w-8" />
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-medium text-white/50 transition-colors hover:text-white"
+            >
+              <ArrowLeft size={11} /> floatal.app
+            </Link>
+          </div>
         </div>
 
         <div className="relative z-10 mt-16 max-w-[520px]">
@@ -92,9 +97,9 @@ export function OperatorLogin() {
 
           <div className="mt-9 flex flex-wrap gap-2">
             {[
+              `${MARKETS.length} markets`,
               `${snapshot.data.agents.length} agents`,
-              `${online} online`,
-              formatCompactMoney(totalFloat) + ' float',
+              `${online} online in ${homeMarket.capital}`,
             ].map((item) => (
               <span
                 key={item}
@@ -110,10 +115,10 @@ export function OperatorLogin() {
           <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.035] p-2 backdrop-blur-sm">
             <div className="relative overflow-hidden rounded-[18px] border border-white/[0.07] bg-[#06271F]">
               <NetworkMap
-                agents={snapshot.data.agents}
-                selectedId="agt_ama"
+                agents={homeAgents}
+                selectedId={homeAgents[0]?.id}
                 className="h-[212px] w-full"
-                currentAgentId="agt_ama"
+                currentAgentId={homeAgents[0]?.id}
               />
               <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -122,15 +127,15 @@ export function OperatorLogin() {
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#78C9A4]" />
                   </span>
                   <span className="text-[8.5px] font-medium uppercase tracking-[0.14em] text-white/40">
-                    Accra Metro · live
+                    {homeMarket.capital} · live
                   </span>
                 </div>
                 <div className="flex -space-x-1.5">
-                  {snapshot.data.agents.slice(0, 4).map((agent) => (
+                  {homeAgents.slice(0, 4).map((agent) => (
                     <Avatar key={agent.id} name={agent.name} hue={agent.avatarHue} size="xs" className="ring-2 ring-[#06271F]" />
                   ))}
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[8px] text-white/60 ring-2 ring-[#06271F]">
-                    +{snapshot.data.agents.length - 4}
+                    +{Math.max(0, homeAgents.length - 4)}
                   </span>
                 </div>
               </div>

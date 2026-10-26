@@ -4,9 +4,11 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react'
 import { AgentStage } from './AgentStage'
 import { Brand, BrandMark } from '../components/Brand'
-import { Spinner } from '../components/ui'
+import { Flag, Spinner } from '../components/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useFloatal } from '../lib/hooks'
-import { DEMO_AGENTS, DEMO_OTP, findAgentByPhone, requestAgentOtp, verifyAgentOtp } from '../lib/auth'
+import { DEMO_OTP, findAgentByPhone, requestAgentOtp, verifyAgentOtp } from '../lib/auth'
+import { DEMO_AGENTS } from '../lib/seed'
 import { supabaseEnabled } from '../lib/supabase'
 import { emitHaptic, emitToast } from '../lib/toast'
 import { cx, phoneDigits, toE164 } from '../lib/format'
@@ -64,6 +66,13 @@ export function AgentLogin() {
     }, 1000)
     return () => window.clearInterval(timer)
   }, [step])
+
+  const handleCountryChange = (next: CountryCode) => {
+    setCountry(next)
+    setPhone(supabaseEnabled ? '' : demoLocal(next))
+    setCode(Array(6).fill(''))
+    setError('')
+  }
 
   const handleRequest = async () => {
     setError('')
@@ -158,10 +167,13 @@ export function AgentLogin() {
             <BrandMark size={30} />
             <Brand tone="light" size="sm" />
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[9.5px] font-medium uppercase tracking-[0.12em] text-white/55 backdrop-blur-sm">
-            <ShieldCheck size={10} className="text-gold-400" />
-            Secure
-          </span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle onDark className="h-8 w-8" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-2.5 py-1 text-[9.5px] font-medium uppercase tracking-[0.12em] text-white/55 backdrop-blur-sm">
+              <ShieldCheck size={10} className="text-gold-400" />
+              Secure
+            </span>
+          </div>
         </div>
 
         <div className="relative px-6 pb-8 pt-8">
@@ -215,13 +227,29 @@ export function AgentLogin() {
                   <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Mobile number</span>
                   <div
                     className={cx(
-                      'mt-2 flex items-center rounded-xl border bg-white transition-shadow focus-within:border-forest-500 focus-within:shadow-[0_0_0_4px_rgba(39,150,117,0.1)]',
+                      'mt-2 flex items-stretch rounded-xl border bg-white transition-shadow focus-within:border-forest-500 focus-within:shadow-[0_0_0_4px_rgba(39,150,117,0.1)]',
                       error ? 'border-danger-500/60' : 'border-forest-900/12',
                     )}
                   >
-                    <span className="flex items-center gap-1.5 border-r border-forest-900/8 py-3 pl-3.5 pr-2.5 text-[13px] font-medium text-forest-900">
-                      <span className="text-[13px]">🇬🇭</span> +233
-                    </span>
+                    <div className="relative shrink-0 border-r border-forest-900/8">
+                      <select
+                        value={country}
+                        onChange={(event) => handleCountryChange(event.target.value as CountryCode)}
+                        aria-label="Country and dial code"
+                        className="h-full appearance-none bg-transparent py-3 pl-3.5 pr-7 text-[13px] font-medium text-forest-900 outline-none"
+                      >
+                        {MARKETS.map((option) => (
+                          <option key={option.code} value={option.code}>
+                            <Flag code={option.code} className="h-3.5 w-5" /> {option.dialCode}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        size={11}
+                        strokeWidth={2.2}
+                        className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted"
+                      />
+                    </div>
                     <input
                       id="agent-phone"
                       type="tel"
@@ -229,14 +257,14 @@ export function AgentLogin() {
                       autoComplete="tel-national"
                       value={phone}
                       onChange={(event) => {
-                        setPhone(formatLocal(event.target.value))
+                        setPhone(formatLocal(event.target.value, market.localLength))
                         setError('')
                       }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') void handleRequest()
                       }}
-                      placeholder="24 555 0192"
-                      className="tnum w-full bg-transparent px-3 py-3 text-[15px] font-medium tracking-[0.01em] text-forest-900 outline-none placeholder:text-sand-400"
+                      placeholder={formatLocal(demoLocal(country) || '0'.repeat(market.localLength), market.localLength)}
+                      className="tnum min-w-0 flex-1 bg-transparent px-3 py-3 text-[15px] font-medium tracking-[0.01em] text-forest-900 outline-none placeholder:text-sand-400"
                     />
                   </div>
                 </label>
@@ -316,7 +344,7 @@ export function AgentLogin() {
                   Enter your code
                 </h2>
                 <p className="mt-1 text-[11.5px] text-muted">
-                  A 6-digit code was sent to <span className="font-medium text-forest-900">+233 {formatLocal(phone)}</span>.
+                  A 6-digit code was sent to <span className="font-medium text-forest-900">{displayPhone}</span>.
                 </p>
 
                 <div className="mt-5 flex justify-between gap-1.5">

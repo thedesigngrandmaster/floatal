@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Theme preview</title>
+    <script>
+      const params = new URLSearchParams(location.search)
+      const mode = params.get('mode') || 'dark'
+      const to = params.get('to') || '/'
+      try {
+        localStorage.setItem('floatal.theme.v1', mode)
+      } catch (error) {}
+      location.replace(to)
+    </script>
+  </head>
+  <body></body>
+</html>

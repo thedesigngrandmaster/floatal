@@ -21,7 +21,7 @@ const operator: Operator = {
   country: 'Ghana',
   currency: 'GHS',
   markets: ['GH', 'NG', 'KE', 'RW', 'GM'],
-  supportEmail: 'network@floatal.dev',
+  supportEmail: 'network@floatal.app',
   plan: 'Enterprise',
   timezone: 'Africa/Accra',
   joinedAt: '2023-03-14T09:00:00.000Z',

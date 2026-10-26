@@ -87,7 +87,7 @@ export function AgentHome() {
   const firstName = agent.name.split(' ')[0]
 
   return (
-    <>
+    <div className="agent-page pt-safe">
       <HomeHeader agent={agent} snapshot={snapshot} />
 
       <div className="mt-6">
@@ -147,7 +147,7 @@ export function AgentHome() {
         counterparty={counterparty}
       />
       <HomeFooter agent={agent} />
-    </>
+    </div>
   )
 }
 
@@ -191,7 +191,7 @@ function HomeHeader({ agent, snapshot }: { agent: Agent; snapshot: StoreSnapshot
   const queued = snapshot.queues[agent.id]?.length ?? 0
   const online = snapshot.online && !snapshot.offlineSimulated
   return (
-    <header className="pt-safe flex items-center justify-between gap-3">
+    <header className="flex items-center justify-between gap-3">
       <Link to="/app/profile" className="flex min-w-0 items-center gap-3">
         <span className="relative">
           <Avatar name={agent.name} hue={agent.avatarHue} size="md" />
@@ -264,9 +264,9 @@ function HeroCard({
         <div className="text-[9.5px] font-medium uppercase tracking-[0.15em] text-white/40">
           Available float
         </div>
-        <div className="mt-1.5 flex items-baseline gap-1.5">
-          <span className="text-[12px] font-medium tracking-[0.02em] text-white/45">{agent.currency}</span>
-          <span className="balance-display text-[47px] leading-none text-[#F7F5EF]">
+        <div className="mt-1.5 flex min-w-0 items-baseline gap-1.5">
+          <span className="shrink-0 text-[12px] font-medium tracking-[0.02em] text-white/45">{agent.currency}</span>
+          <span className="balance-display min-w-0 text-[clamp(32px,10vw,47px)] leading-none text-[#F7F5EF]">
             {formatAmount(animatedBalance)}
           </span>
         </div>

@@ -26,6 +26,7 @@ import {
 import { BrandLockup } from '../components/Brand'
 import { ToastViewport } from '../components/ToastViewport'
 import { Avatar, SyncChip } from '../components/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import { useFloatal, useNow } from '../lib/hooks'
 import { cx, formatCompactMoney, relativeTime, statusLabel } from '../lib/format'
 import { store } from '../lib/store'
@@ -223,7 +224,7 @@ export function OperatorLayout() {
                 {snapshot.operatorSession?.name ?? 'Adjoa Serwaa'}
               </div>
               <div className="mt-0.5 truncate text-[8.5px] text-white/30">
-                {snapshot.operatorSession?.email ?? 'adjoa@ayamoney.com'}
+                {snapshot.operatorSession?.email ?? 'adjoa@floatal.app'}
               </div>
             </div>
             <button
@@ -260,6 +261,7 @@ export function OperatorLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            <ThemeToggle className="hidden sm:inline-flex" />
             <MarketSwitcher />
             <SyncChip
               online={snapshot.online && !snapshot.offlineSimulated}
@@ -322,7 +324,7 @@ export function OperatorLayout() {
             <span className="inline-flex items-center gap-1">
               <RefreshCw size={8} /> Synced {relativeTime(snapshot.data.lastSyncAt, now).toLowerCase()}
             </span>
-            <span>v1.0 · Accra Metro</span>
+            <span>v1.0 · {meta.name}</span>
           </span>
         </footer>
       </div>

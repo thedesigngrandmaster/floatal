@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" role="img" aria-label="Kenya">
+  <rect width="60" height="13.1" fill="#111"/>
+  <rect y="13.1" width="60" height="1.6" fill="#fff"/>
+  <rect y="14.7" width="60" height="10.6" fill="#BB0000"/>
+  <rect y="25.3" width="60" height="1.6" fill="#fff"/>
+  <rect y="26.9" width="60" height="13.1" fill="#006600"/>
+  <g stroke="#fff" stroke-width="1.1">
+    <path d="M22 33 L38 7"/>
+    <path d="M38 33 L22 7"/>
+  </g>
+  <path d="M30 9 C35 9 37 12 37 17 C37 24 33 29 30 31 C27 29 23 24 23 17 C23 12 25 9 30 9 Z" fill="#fff"/>
+  <path d="M30 10.5 C33.8 10.5 35.4 13 35.4 17 C35.4 23 32.4 27.4 30 29.2 C27.6 27.4 24.6 23 24.6 17 C24.6 13 26.2 10.5 30 10.5 Z" fill="#BB0000"/>
+  <path d="M30 10.5 C33.8 10.5 35.4 13 35.4 17 C34.2 17 32 16.4 30 14.6 C28 16.4 25.8 17 24.6 17 C24.6 13 26.2 10.5 30 10.5 Z" fill="#111"/>
+</svg>

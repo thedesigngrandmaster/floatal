@@ -1093,7 +1093,7 @@ export function InviteAgentDialog({
           >
             {MARKETS.map((market) => (
               <option key={market.code} value={market.code}>
-                {market.flag} {market.name} · {market.currency}
+                {market.name} · {market.currency} ({market.code})
               </option>
             ))}
           </select>

@@ -141,6 +141,9 @@
   }
 }
 
+/* ————— Components ————— */
+@layer components {
+
 /* ————— Typography utilities ————— */
 .font-display {
   font-family: var(--font-display);
@@ -928,4 +931,111 @@
   .install-only {
     display: none !important;
   }
+}
+
+} /* end @layer components */
+
+/* ————— Dark theme ————— */
+.dark {
+  color-scheme: dark;
+  --color-cream: #06150f;
+  --color-paper: #0a2118;
+  --color-sand-50: #0c241b;
+  --color-sand-100: #102e22;
+  --color-sand-200: #16382a;
+  --color-sand-300: #214736;
+  --color-sand-400: #2f5a45;
+  --color-ink: #eef6f1;
+  --color-muted: #93ab9d;
+  --color-mint-50: #0d2a1f;
+  --color-mint-100: #123326;
+  --color-mint-200: #173d2d;
+  --color-mint-300: #1d4a36;
+  --color-mint-400: #2a6349;
+  --color-mint-500: #3a7d5c;
+  --color-healthy-50: #0d2a1f;
+  --color-healthy-100: #123a2b;
+  --color-warn-50: #2a2213;
+  --color-warn-100: #3a2f18;
+  --color-danger-50: #2c1a17;
+  --color-danger-100: #3d221e;
+}
+
+html.dark,
+html.dark body {
+  background: #06150f;
+}
+
+.dark .bg-white {
+  background-color: #0e2a20;
+}
+
+.dark .text-forest-950,
+.dark .text-forest-900,
+.dark .text-ink {
+  color: #edf6f1;
+}
+
+.dark .text-forest-800 {
+  color: #dcece3;
+}
+
+.dark .text-forest-700 {
+  color: #b7d4c4;
+}
+
+.dark [class*='border-forest-900'] {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+.dark [class*='divide-forest-900'] > * + * {
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+.dark .field {
+  background-color: #0e2a20;
+  border-color: rgb(255 255 255 / 0.12);
+  color: #eaf4ee;
+}
+
+.dark .field::placeholder {
+  color: rgb(255 255 255 / 0.35);
+}
+
+.dark .bg-gold-400 .text-forest-900,
+.dark .bg-gold-400.text-forest-900,
+.dark .bg-gold-300 .text-forest-900,
+.dark .bg-gold-300.text-forest-900,
+.dark .bg-mint-100 .text-forest-900,
+.dark .bg-mint-100.text-forest-900,
+.dark .bg-mint-200 .text-forest-900,
+.dark .bg-mint-200.text-forest-900,
+.dark .bg-healthy-500 .text-forest-900,
+.dark .bg-healthy-500.text-forest-900 {
+  color: #0c2a1e;
+}
+
+.dark .shadow-lift,
+.dark .shadow-card {
+  --tw-shadow-color: rgb(0 0 0 / 0.4);
+}
+
+/* Translucent light surfaces: keep a surface tone in dark mode so
+   labels never end up light-on-light. Very low alphas are dark-mode
+   glass and stay untouched. */
+.dark [class*='bg-white/5'],
+.dark [class*='bg-white/6'],
+.dark [class*='bg-white/7'] {
+  background-color: rgb(14 42 32 / 0.72);
+}
+
+/* Paper buttons stay light, so their labels must stay dark. */
+.dark [class*="bg-[#F7F5EF]"] {
+  color: #0c2a1e;
+}
+
+.dark [class*="bg-[#F7F5EF]"] .text-forest-950,
+.dark [class*="bg-[#F7F5EF]"] .text-forest-900,
+.dark [class*="bg-[#F7F5EF]"] .text-forest-800 {
+  color: #0c2a1e;
 }

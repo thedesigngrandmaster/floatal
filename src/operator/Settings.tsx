@@ -23,7 +23,7 @@ import {
   Wifi,
 } from 'lucide-react'
 import { BrandMark } from '../components/Brand'
-import { Toggle } from '../components/ui'
+import { Toggle, Flag } from '../components/ui'
 import { useFloatal, useNow } from '../lib/hooks'
 import { cx, formatCompactMoney, formatMoney, relativeTime } from '../lib/format'
 import { store } from '../lib/store'
@@ -270,7 +270,7 @@ export function Settings() {
           >
             <div className="p-5">
               <div className="mb-3 flex items-center gap-2 text-[9.5px] text-muted">
-                <span className="text-[13px] leading-none">{meta.flag}</span>
+                <Flag code={meta.code} className="h-3.5 w-5" />
                 <span className="font-medium text-forest-900">{meta.name}</span>
                 <span className="text-muted/50">·</span>
                 <span>{meta.currency}</span>

@@ -1,4 +1,4 @@
-import type { CountryCode, Currency } from './types'
+﻿import type { CountryCode, Currency } from './types'
 
 export interface Market {
   code: CountryCode
@@ -8,7 +8,6 @@ export interface Market {
   locale: string
   timezone: string
   capital: string
-  flag: string
   localLength: number
   thresholds: { lowThreshold: number; criticalThreshold: number }
   step: number
@@ -26,7 +25,6 @@ export const MARKETS: Market[] = [
     locale: 'en-GH',
     timezone: 'Africa/Accra',
     capital: 'Accra',
-    flag: '🇬🇭',
     localLength: 9,
     thresholds: { lowThreshold: 5_000, criticalThreshold: 2_000 },
     step: 500,
@@ -42,7 +40,6 @@ export const MARKETS: Market[] = [
     locale: 'en-NG',
     timezone: 'Africa/Lagos',
     capital: 'Lagos',
-    flag: '🇳🇬',
     localLength: 10,
     thresholds: { lowThreshold: 900_000, criticalThreshold: 350_000 },
     step: 50_000,
@@ -58,7 +55,6 @@ export const MARKETS: Market[] = [
     locale: 'en-KE',
     timezone: 'Africa/Nairobi',
     capital: 'Nairobi',
-    flag: '🇰🇪',
     localLength: 9,
     thresholds: { lowThreshold: 70_000, criticalThreshold: 25_000 },
     step: 5_000,
@@ -74,7 +70,6 @@ export const MARKETS: Market[] = [
     locale: 'en-RW',
     timezone: 'Africa/Kigali',
     capital: 'Kigali',
-    flag: '🇷🇼',
     localLength: 9,
     thresholds: { lowThreshold: 850_000, criticalThreshold: 300_000 },
     step: 50_000,
@@ -90,7 +85,6 @@ export const MARKETS: Market[] = [
     locale: 'en-GM',
     timezone: 'Africa/Banjul',
     capital: 'Banjul',
-    flag: '🇬🇲',
     localLength: 7,
     thresholds: { lowThreshold: 30_000, criticalThreshold: 12_000 },
     step: 2_500,
@@ -117,3 +111,4 @@ export function currencyOf(country: CountryCode): Currency {
 export function marketName(country: CountryCode) {
   return marketByCode[country].name
 }
+

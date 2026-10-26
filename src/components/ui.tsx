@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { cx, formatAmount, formatCompactMoney, statusLabel } from '../lib/format'
 import { marketByCode } from '../lib/markets'
+import { portraitFor } from '../lib/avatars'
 import type { Agent, FloatStatus, RequestStatus } from '../lib/types'
 
 export function StatusPill({
@@ -182,11 +183,13 @@ export function Avatar({
   hue = 152,
   size = 'md',
   className,
+  src,
 }: {
   name: string
   hue?: number
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   className?: string
+  src?: string
 }) {
   const initials = name
     .split(/\s+/)
@@ -201,10 +204,12 @@ export function Avatar({
     lg: 'h-12 w-12 text-sm',
     xl: 'h-16 w-16 text-lg',
   }
+  const photo = src ?? portraitFor(name)
+  const [failed, setFailed] = useState(false)
   return (
     <span
       className={cx(
-        'inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-[0.01em] ring-1 ring-inset ring-black/[0.04]',
+        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full font-semibold tracking-[0.01em] ring-1 ring-inset ring-black/[0.06]',
         sizes[size],
         className,
       )}
@@ -214,8 +219,41 @@ export function Avatar({
       }}
       aria-hidden="true"
     >
-      {initials}
+      {photo && !failed ? (
+        <img
+          src={photo}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        initials
+      )}
     </span>
+  )
+}
+
+export function Flag({
+  code,
+  className,
+}: {
+  code: string
+  className?: string
+}) {
+  return (
+    <img
+      src={`/flags/${code.toLowerCase()}.svg`}
+      alt=""
+      aria-hidden="true"
+      loading="lazy"
+      decoding="async"
+      className={cx(
+        'h-[13px] w-[18px] shrink-0 rounded-[2.5px] object-cover ring-1 ring-inset ring-black/10',
+        className,
+      )}
+    />
   )
 }
 

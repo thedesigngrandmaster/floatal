@@ -1,4 +1,4 @@
-import { supabase, supabaseEnabled } from './supabase'
+import { getSupabase } from './supabase'
 import type {
   ActivityEvent,
   Agent,
@@ -14,6 +14,14 @@ type Row = Record<string, unknown>
 
 const str = (value: unknown, fallback = '') => (typeof value === 'string' ? value : fallback)
 const num = (value: unknown) => (typeof value === 'number' ? value : Number(value) || 0)
+
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('')
 
 function mapOperator(row: Row): Operator {
   return {
@@ -33,37 +41,36 @@ function mapOperator(row: Row): Operator {
 
 function mapAgent(row: Row): Agent {
   const country = str(row.country, DEFAULT_MARKET) as CountryCode
+  const market = marketByCode[country] ?? marketByCode[DEFAULT_MARKET]
+  const name = str(row.name)
   return {
     id: str(row.id),
+    name,
+    businessName: str(row.business_name, name),
     operatorId: str(row.operator_id),
-    name: str(row.name),
-    businessName: str(row.business_name, str(row.name)),
-    phone: str(row.phone),
     country,
-    currency: (str(row.currency, marketByCode[country]?.currency ?? 'GHS') as Agent['currency']) ?? 'GHS',
+    currency: (str(row.currency, market.currency) as Agent['currency']) ?? market.currency,
+    phone: str(row.phone),
     area: str(row.area),
-    city: str(row.city, 'Accra'),
-    initials: str(row.initials),
-    floatBalance: num(row.float_balance),
-    status: (str(row.status, 'healthy') as Agent['status']) ?? 'healthy',
-    targetFloat: num(row.target_float),
-    lowThreshold: num(row.low_threshold),
-    criticalThreshold: num(row.critical_threshold),
-    lastReportAt: str(row.last_report_at, new Date().toISOString()),
-    lastSyncAt: str(row.last_sync_at, new Date().toISOString()),
-    position: {
-      x: num((row.position as Row | undefined)?.x ?? row.position_x ?? 50),
-      y: num((row.position as Row | undefined)?.y ?? row.position_y ?? 40),
-    },
-    coordinates: {
-      lat: num((row.coordinates as Row | undefined)?.lat ?? row.lat ?? 5.56),
-      lng: num((row.coordinates as Row | undefined)?.lng ?? row.lng ?? -0.2),
-    },
+    city: str(row.city, market.capital),
+    initials: str(row.initials, initialsOf(name)),
     distanceKm: num(row.distance_km),
+    floatBalance: num(row.float_balance),
+    lowThreshold: num(row.low_threshold) || market.thresholds.lowThreshold,
+    criticalThreshold: num(row.critical_threshold) || market.thresholds.criticalThreshold,
+    targetFloat: num(row.target_float) || market.targetFloat,
+    status: (str(row.status, 'healthy') as Agent['status']) ?? 'healthy',
+    lastSyncAt: str(row.last_sync_at, new Date().toISOString()),
+    lastReportAt: str(row.last_report_at, new Date().toISOString()),
+    position: { x: num(row.position_x) || 50, y: num(row.position_y) || 50 },
+    coordinates: {
+      lat: num(row.latitude) || market.coordinates.lat,
+      lng: num(row.longitude) || market.coordinates.lng,
+    },
     todayVolume: num(row.today_volume),
-    reliability: num(row.reliability),
+    reliability: num(row.reliability) || 96,
     joinedAt: str(row.created_at, new Date().toISOString()),
-    avatarHue: num(row.avatar_hue),
+    avatarHue: num(row.avatar_hue) || 152,
   }
 }
 
@@ -75,34 +82,37 @@ function mapReport(row: Row): FloatReport {
     status: (str(row.status, 'healthy') as FloatReport['status']) ?? 'healthy',
     note: str(row.note) || undefined,
     createdAt: str(row.created_at),
-    syncedAt: row.synced_at ? str(row.synced_at) : null,
-    pending: Boolean(row.pending),
+    syncedAt: str(row.synced_at) || str(row.created_at),
     source: (str(row.source, 'agent') as FloatReport['source']) ?? 'agent',
   }
 }
 
 function mapRequest(row: Row): RebalanceRequest {
-  const country = str(row.country, DEFAULT_MARKET) as CountryCode
+  const currency = (str(row.currency, 'GHS') as RebalanceRequest['currency']) ?? 'GHS'
   return {
     id: str(row.id),
     reference: str(row.reference),
     fromAgentId: str(row.from_agent_id),
     toAgentId: str(row.to_agent_id),
-    country,
-    currency: (str(row.currency, marketByCode[country]?.currency ?? 'GHS') as RebalanceRequest['currency']) ?? 'GHS',
+    country: (str(row.country, marketForCurrency(currency)) as CountryCode) ?? 'GH',
     amount: num(row.amount),
+    currency,
     status: (str(row.status, 'pending') as RebalanceRequest['status']) ?? 'pending',
     note: str(row.note) || undefined,
     createdAt: str(row.created_at),
     updatedAt: str(row.updated_at, str(row.created_at)),
-    acceptedAt: row.accepted_at ? str(row.accepted_at) : undefined,
-    completedAt: row.completed_at ? str(row.completed_at) : undefined,
-    declinedAt: row.declined_at ? str(row.declined_at) : undefined,
-    flaggedAt: row.flagged_at ? str(row.flagged_at) : undefined,
+    acceptedAt: str(row.accepted_at) || undefined,
+    completedAt: str(row.completed_at) || undefined,
+    declinedAt: str(row.declined_at) || undefined,
+    flaggedAt: str(row.flagged_at) || undefined,
     flagReason: str(row.flag_reason) || undefined,
     requesterConfirmed: Boolean(row.requester_confirmed),
     providerConfirmed: Boolean(row.provider_confirmed),
   }
+}
+
+function marketForCurrency(currency: string): CountryCode {
+  return MARKETS.find((market) => market.currency === currency)?.code ?? DEFAULT_MARKET
 }
 
 function mapEvent(row: Row): ActivityEvent {
@@ -122,7 +132,8 @@ function mapEvent(row: Row): ActivityEvent {
 }
 
 export async function fetchRemoteBundle(): Promise<Partial<SharedData> | null> {
-  if (!supabase || !supabaseEnabled) return null
+  const supabase = await getSupabase()
+  if (!supabase) return null
   const { data: auth } = await supabase.auth.getUser()
   if (!auth.user) return null
 
@@ -169,19 +180,29 @@ export async function fetchRemoteBundle(): Promise<Partial<SharedData> | null> {
 }
 
 export function subscribeRemote(onChange: () => void) {
-  if (!supabase) return () => undefined
-  const client = supabase
-  const channel = client.channel('floatal-network')
-  for (const table of ['agents', 'float_reports', 'rebalance_requests', 'activity_events']) {
-    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onChange())
-  }
-  channel.subscribe()
+  let cleanup: (() => void) | undefined
+  let cancelled = false
+
+  void getSupabase().then((client) => {
+    if (!client || cancelled) return
+    const channel = client.channel('floatal-network')
+    for (const table of ['agents', 'float_reports', 'rebalance_requests', 'activity_events']) {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onChange())
+    }
+    channel.subscribe()
+    cleanup = () => {
+      void client.removeChannel(channel)
+    }
+  })
+
   return () => {
-    void client.removeChannel(channel)
+    cancelled = true
+    cleanup?.()
   }
 }
 
 export async function remoteRequestOtp(phone: string) {
+  const supabase = await getSupabase()
   if (!supabase) return { ok: false as const, error: 'Supabase is not configured' }
   const { error } = await supabase.auth.signInWithOtp({
     phone,
@@ -192,6 +213,7 @@ export async function remoteRequestOtp(phone: string) {
 }
 
 export async function remoteVerifyOtp(phone: string, token: string) {
+  const supabase = await getSupabase()
   if (!supabase) return { ok: false as const, error: 'Supabase is not configured' }
   const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' })
   if (error) return { ok: false as const, error: error.message }
@@ -208,6 +230,7 @@ export async function remoteVerifyOtp(phone: string, token: string) {
 }
 
 export async function remoteOperatorSignIn(email: string, password: string) {
+  const supabase = await getSupabase()
   if (!supabase) return { ok: false as const, error: 'Supabase is not configured' }
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return { ok: false as const, error: error.message }
@@ -221,9 +244,10 @@ export async function remoteOperatorSignIn(email: string, password: string) {
   return { ok: true as const, operatorId: profile.operator_id as string }
 }
 
-async function withRemote(
-  action: (client: NonNullable<typeof supabase>) => PromiseLike<unknown> | Promise<unknown>,
-) {
+type RemoteClient = NonNullable<Awaited<ReturnType<typeof getSupabase>>>
+
+async function withRemote(action: (client: RemoteClient) => PromiseLike<unknown> | Promise<unknown>) {
+  const supabase = await getSupabase()
   if (!supabase) return
   const { data } = await supabase.auth.getSession()
   if (!data.session) return
